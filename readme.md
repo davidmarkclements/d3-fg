@@ -1,16 +1,16 @@
-# d3-flamegraph 
+# d3-fg
 
 Flamegraph visualization for d3 v3.5.x
 
 ## Installation
 
 ```sh
-npm install d3-flamegraph --save
+npm install d3-fg--save
 ```
 
 ## Usage
 
-d3-flamegraph is currently built against [d3](http://npm.im/d3) v3.5.x, which means
+d3-fgis currently built against [d3](http://npm.im/d3) v3.5.x, which means
 `d3` has to be in the global namespace.
 
 ```js

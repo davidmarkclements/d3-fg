@@ -1,6 +1,6 @@
 {
-  "name": "d3-flamegraph",
-  "version": "1.0.1",
+  "name": "d3-fg",
+  "version": "1.0.0",
   "description": "Flamegraph visualization for d3 v3.5.x",
   "main": "index.js",
   "scripts": {
@@ -14,11 +14,11 @@
   "devDependencies": {},
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/davidmarkclements/d3-flamegraph.git"
+    "url": "git+https://github.com/davidmarkclements/d3-fg.git"
   },
   "keywords": [],
   "bugs": {
-    "url": "https://github.com/davidmarkclements/d3-flamegraph/issues"
+    "url": "https://github.com/davidmarkclements/d3-fg/issues"
   },
-  "homepage": "https://github.com/davidmarkclements/d3-flamegraph#readme"
+  "homepage": "https://github.com/davidmarkclements/d3-fg#readme"
 }
