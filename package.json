@@ -10,5 +10,15 @@
   "license": "Apache 2.0",
   "dependencies": {
     "hsl-to-rgb-for-reals": "^1.1.0"
-  }
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davidmarkclements/d3-flamegraph.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/davidmarkclements/d3-flamegraph/issues"
+  },
+  "homepage": "https://github.com/davidmarkclements/d3-flamegraph#readme"
 }
