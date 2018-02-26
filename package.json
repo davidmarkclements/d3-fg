@@ -1,0 +1,14 @@
+{
+  "name": "d3-flamegraph",
+  "version": "1.0.0",
+  "description": "Flamegraph visualization for d3 v3.5.x",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "David Mark Clements <david.clements@nearform.com>",
+  "license": "Apache 2.0",
+  "dependencies": {
+    "hsl-to-rgb-for-reals": "^1.1.0"
+  }
+}
