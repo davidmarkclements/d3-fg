@@ -4,18 +4,18 @@ var hsl = require('hsl-to-rgb-for-reals')
 var diffScale = d3.scale.linear().range([0, 0.2])
 var colors = {
   v8: {h: 67, s: 81, l: 65},
-  regexp: {h: 310, s: 86, l: 18},
-  nativeC: {h: 0, s: 50, l: 50},
-  nativeJS: {h: 122, s: 50, l: 45},
-  core: {h: 10, s: 66, l: 80},
+  regexp: {h: 300, s: 100, l: 50},
+  cpp: {h: 0, s: 50, l: 50},
+  native: {h: 122, s: 50, l: 45},
+  core: {h: 0, s: 0, l: 80},
   deps: {h: 244, s: 50, l: 65},
   app: {h: 200, s: 50, l: 45}
 }
-colors.def = colors.core
-colors.js = colors.core
-colors.c = colors.deps
+colors.def = {h: 10, s: 66, l: 80}
+colors.js = {h: 10, s: 66, l: 80}
+colors.c = {h: 10, s: 66, l: 80}
 
-function flameGraph () {
+function flameGraph (opts) {
   var w = 960 // graph width
   var h = 1024 // graph height
   var c = 18 // cell height
@@ -31,6 +31,8 @@ function flameGraph () {
   var labelRx = /^LazyCompile:|Function:|Script:/
   var optRx = /^\w+:(\s+)?\*/
   var notOptRx = /^\w+:(\s+)?~/
+
+  var categorizer = opts.categorizer || langtier
 
   function label (d) {
     if (d.dummy) return ''
@@ -61,7 +63,8 @@ function flameGraph () {
     '(' + d.value + ' of ' + allSamples + ' samples)'
   }
 
-  function langtier (name) {
+  function langtier (child) {
+    var name = child.name
     // todo: C deps
     if (!/.js/.test(name)) {
       switch (true) {
@@ -70,15 +73,15 @@ function flameGraph () {
         case /^RegExp:/
           .test(name): return {type: 'regexp', lang: 'c'}
         case /apply$|call$|Arguments$/
-          .test(name): return {type: 'nativeJS', lang: 'js'}
+          .test(name): return {type: 'native', lang: 'js'}
         case /\.$/.test(name): return {type: 'core', lang: 'js'}
-        default: return {type: 'nativeC', lang: 'c'}
+        default: return {type: 'cpp', lang: 'c'}
       }
       return
     }
 
     switch (true) {
-      case / native /.test(name): return {type: 'nativeJS', lang: 'js'}
+      case / native /.test(name): return {type: 'native', lang: 'js'}
       case (name.indexOf('/') === -1 || /internal\//.test(name) && !/ \//.test(name)): return {type: 'core', lang: 'js'}
       case !/node_modules/.test(name): return {type: 'app', lang: 'js'}
       default: return {type: 'deps', lang: 'js'}
@@ -107,7 +110,7 @@ function flameGraph () {
       data.children.forEach(augment)
       var childValues = 0
       data.children.forEach(function (child) {
-        var lt = langtier(child.name)
+        var lt = categorizer(child)
         child.type = lt.type
         child.lang = lt.lang
 
