@@ -4,7 +4,8 @@ var hsl = require('hsl-to-rgb-for-reals')
 var diffScale = d3.scale.linear().range([0, 0.2])
 var colors = {
   v8: {h: 67, s: 81, l: 65},
-  regexp: {h: 300, s: 100, l: 50},
+  'pre-inlined': {h: 300, s: 100, l: 50},
+  regexp: {h: 27, s: 100, l: 50}, 
   cpp: {h: 0, s: 50, l: 50},
   native: {h: 122, s: 50, l: 45},
   core: {h: 0, s: 0, l: 80},
