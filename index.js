@@ -1,6 +1,6 @@
-/* global d3 */
-var hsl = require('hsl-to-rgb-for-reals')
 
+var hsl = require('hsl-to-rgb-for-reals')
+var d3 = require('d3')
 var diffScale = d3.scale.linear().range([0, 0.2])
 var colors = {
   v8: {h: 67, s: 81, l: 65},
@@ -17,9 +17,13 @@ colors.js = {h: 10, s: 66, l: 80}
 colors.c = {h: 10, s: 66, l: 80}
 
 function flameGraph (opts) {
-  var w = 960 // graph width
-  var h = 1024 // graph height
+  var tree = opts.tree 
+  var element = opts.element
   var c = 18 // cell height
+  var h = opts.height || (depth(tree) * 18) + 10 + 2 // graph height
+  var minHeight = opts.minHeight || 950
+  h = h < minHeight ? minHeight : h
+  var w = opts.width || document.body.clientWidth * 0.85 // graph width
   var selection = null // selection
   var transitionDuration = 500
   var transitionEase = 'cubic-in-out' // tooltip offset
@@ -33,7 +37,12 @@ function flameGraph (opts) {
   var optRx = /^\w+:(\s+)?\*/
   var notOptRx = /^\w+:(\s+)?~/
 
+  document.addEventListener('DOMContentLoaded', () => {
+    element.scrollTop = element.scrollHeight
+  })
+
   var categorizer = opts.categorizer || langtier
+  var exclude = opts.exclude || []
 
   function label (d) {
     if (d.dummy) return ''
@@ -452,10 +461,29 @@ function flameGraph (opts) {
     if (selection) update()
   }
 
+  chart.setGraphZoom = function (n) {
+    svg.style.transform = 'scale(' + n + ')'
+  }
+
+  chart.renderTree = function (tree) {
+    d3.select(element).datum(tree).call(chart)
+  }
+
   chart.colors = colors
+
+  chart.update = update
+
+  exclude.forEach(chart.typeHide)
+  
+  chart.renderTree(tree)
+
+  const svg = element.querySelector('svg')
+  svg.style.transition = 'transform 200ms ease-in-out'
 
   return chart
 }
+
+
 
 function colorHash (d, perc, allSamples, langs, tiers) {
   if (!d.name) {
@@ -518,6 +546,16 @@ function stackTop (d) {
 
   return top
 }
+
+function depth (tree) {
+  var tree = d3.layout.tree()
+  var deepest = 0
+  tree.nodes(tree).forEach(function (d) {
+    if (d.depth > deepest) deepest = d.depth
+  })
+  return deepest + 1
+}
+
 
 module.exports = flameGraph
 module.exports.colors = colors

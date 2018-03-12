@@ -10,20 +10,12 @@ npm install d3-fg--save
 
 ## Usage
 
-d3-fgis currently built against [d3](http://npm.im/d3) v3.5.x, which means
-`d3` has to be in the global namespace.
+d3-fg is currently built against [d3](http://npm.im/d3) v3.5.x.
 
 ```js
-global.d3 = require('d3')
-var width = document.body.innerWidth * 0.85
-var height = width
-var langsMode = false // color code Cpp vs JS
-var tiersMode = false // color code various code categories
-require('d3-flamegraph')
-  .width(width)
-  .height(height)
-  .langs(langsMode)
-  .tiers(tiersMode)
+var tree = require('./data.json') // d3 json tree 
+var element = document.querySelector('chart') // <chart> element which should be in html body
+require('d3-flamegraph')({{tree, element}})
 ```
 
 ## Dependencies
