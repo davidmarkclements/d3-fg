@@ -7,10 +7,11 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "David Mark Clements <david.clements@nearform.com>",
-  "license": "Apache 2.0",
+  "license": "Apache-2.0",
   "dependencies": {
-    "hsl-to-rgb-for-reals": "^1.1.0",
-    "d3": "^3.5.16"
+    "d3": "^3.5.16",
+    "escape-string-regexp": "^1.0.5",
+    "hsl-to-rgb-for-reals": "^1.1.0"
   },
   "devDependencies": {},
   "repository": {

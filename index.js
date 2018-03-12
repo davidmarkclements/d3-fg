@@ -1,5 +1,6 @@
 
 var hsl = require('hsl-to-rgb-for-reals')
+var rxEsc = require('escape-string-regexp')
 var d3 = require('d3')
 var diffScale = d3.scale.linear().range([0, 0.2])
 var colors = {
@@ -201,7 +202,7 @@ function flameGraph (opts) {
   }
 
   function searchTree (d, term, color) {
-    var re = term instanceof RegExp ? term : new RegExp(term, 'i') 
+    var re = term instanceof RegExp ? term : new RegExp(rxEsc(term), 'i') 
     var label = d.name
 
     if (d.children) {
