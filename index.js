@@ -201,7 +201,7 @@ function flameGraph (opts) {
   }
 
   function searchTree (d, term, color) {
-    var re = new RegExp(term)
+    var re = term instanceof RegExp ? term : new RegExp(term, 'i') 
     var label = d.name
 
     if (d.children) {
@@ -210,12 +210,10 @@ function flameGraph (opts) {
       })
     }
     if (d.hide) { return }
-    if (label.match(re)) {
+    if (re.test(label.split(':')[0])) {
       d.highlight = color || true
     } else {
-      if (typeof d.highlight === 'boolean') {
-        d.highlight = false
-      }
+      d.highlight = false
     }
   }
 
