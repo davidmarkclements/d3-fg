@@ -211,7 +211,16 @@ function flameGraph (opts) {
       })
     }
     if (d.hide) { return }
-    if (re.test(label.split(':')[0])) {
+
+    var searchArea
+    if (d.type === 'cpp') { searchArea = label.split('[')[0] }
+    else if (d.type === 'v8')  { searchArea = label.split(' ')[0] }
+    else if (d.type === 'regexp') { searchArea = label }
+    else { searchArea = label.split(':')[0] }
+
+    console.log(d.type, searchArea)
+
+    if (re.test(searchArea)) {
       d.highlight = color || true
     } else {
       d.highlight = false
