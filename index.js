@@ -467,6 +467,7 @@ function flameGraph (opts) {
 
   chart.renderTree = function (tree) {
     d3.select(element).datum(tree).call(chart)
+    element.removeChild(element.querySelectorAll('svg')[1])
   }
 
   chart.colors = colors
@@ -475,7 +476,7 @@ function flameGraph (opts) {
 
   exclude.forEach(chart.typeHide)
   
-  chart.renderTree(tree)
+  d3.select(element).datum(tree).call(chart)
 
   const svg = element.querySelector('svg')
   svg.style.transition = 'transform 200ms ease-in-out'
