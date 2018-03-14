@@ -47,6 +47,7 @@ function flameGraph (opts) {
 
   function label (d) {
     if (d.dummy) return ''
+    if (!d.parent) return d.name
     var optInfo = d.optimized && '—opt\'d—' ||
       d.notOptimized && '—not opt\'d—' || ''
 
@@ -218,8 +219,6 @@ function flameGraph (opts) {
     else if (d.type === 'regexp') { searchArea = label }
     else { searchArea = label.split(':')[0] }
 
-    console.log(d.type, searchArea)
-
     if (re.test(searchArea)) {
       d.highlight = color || true
     } else {
@@ -313,9 +312,11 @@ function flameGraph (opts) {
           .attr('height', function (d) { return d.hide ? 0 : c })
           .style('cursor', 'pointer')
           .style('stroke', function (d) {
+            if (!d.parent) return 'rgba(0,0,0,0.7)'
             return colorHash(d, 1.1, allSamples, langs, tiers)
           })
           .attr('fill', function (d) {
+            if (!d.parent) return '#FFF'
             var highlightColor = '#E600E6'
 
             if (typeof d.highlight === 'string') {
@@ -351,7 +352,9 @@ function flameGraph (opts) {
           .style('padding', '0')
           .style('font-weight', '400')
           .style('color', '#000')
-          .style('text-align', 'left')
+          .style('text-align', function (d) {
+            return d.parent ? 'left' : 'center'
+          })
           .html(label)
 
         g.on('click', zoom)
