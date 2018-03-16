@@ -5,7 +5,7 @@ var d3 = require('d3')
 var diffScale = d3.scale.linear().range([0, 0.2])
 var colors = {
   v8: {h: 67, s: 81, l: 65},
-  'pre-inlined': {h: 300, s: 100, l: 50},
+  inlinable: {h: 300, s: 100, l: 50},
   regexp: {h: 27, s: 100, l: 50}, 
   cpp: {h: 0, s: 50, l: 50},
   native: {h: 122, s: 50, l: 45},
@@ -66,6 +66,7 @@ function flameGraph (opts) {
   }
 
   function titleLabel (d) {
+    if (!d.parent) return ''
     var top = stackTop(d)
     return d.name + '\n' + (top
       ? 'Top of Stack:' + d3.round(100 * (top / allSamples), 1) + '% ' +
