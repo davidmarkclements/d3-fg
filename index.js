@@ -24,7 +24,7 @@ function flameGraph (opts) {
   var h = opts.height || (depth(tree) * 18) + 10 + 2 // graph height
   var minHeight = opts.minHeight || 950
   h = h < minHeight ? minHeight : h
-  var w = opts.width || document.body.clientWidth * 0.85 // graph width
+  var w = opts.width || document.body.clientWidth * 0.89 // graph width
   var selection = null // selection
   var transitionDuration = 500
   var transitionEase = 'cubic-in-out' // tooltip offset
