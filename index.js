@@ -17,11 +17,13 @@ colors.def = {h: 10, s: 66, l: 80}
 colors.js = {h: 10, s: 66, l: 80}
 colors.c = {h: 10, s: 66, l: 80}
 
+
+
 function flameGraph (opts) {
   var tree = opts.tree 
   var element = opts.element
   var c = 18 // cell height
-  var h = opts.height || (depth(tree) * 18) + 10 + 2 // graph height
+  var h = opts.height || (depth(tree) + 2) * c // graph height
   var minHeight = opts.minHeight || 950
   h = h < minHeight ? minHeight : h
   var w = opts.width || document.body.clientWidth * 0.89 // graph width
@@ -561,9 +563,9 @@ function stackTop (d) {
 }
 
 function depth (tree) {
-  var tree = d3.layout.tree()
+  var layout = d3.layout.tree()
   var deepest = 0
-  tree.nodes(tree).forEach(function (d) {
+  layout.nodes(tree).forEach(function (d) {
     if (d.depth > deepest) deepest = d.depth
   })
   return deepest + 1
