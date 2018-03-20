@@ -54,7 +54,7 @@ function flameGraph (opts) {
 
     if (onStack && topOfStack) { onStack += ', ' }
 
-    return d.name + '<small>' + onStack + ' ' + topOfStack + '</small>'
+    return d.name + ' <small>' + onStack + ' ' + topOfStack + '</small>'
   }
 
   function titleLabel (d) {
