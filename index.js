@@ -17,8 +17,6 @@ colors.def = {h: 10, s: 66, l: 80}
 colors.js = {h: 10, s: 66, l: 80}
 colors.c = {h: 10, s: 66, l: 80}
 
-
-
 function flameGraph (opts) {
   var tree = opts.tree 
   var element = opts.element
@@ -36,9 +34,6 @@ function flameGraph (opts) {
   var filterNeeded = true
   var filterTypes = []
   var allSamples
-  var labelRx = /^LazyCompile:|Function:|Script:/
-  var optRx = /^\w+:(\s+)?\*/
-  var notOptRx = /^\w+:(\s+)?~/
 
   document.addEventListener('DOMContentLoaded', () => {
     element.scrollTop = element.scrollHeight
@@ -50,8 +45,6 @@ function flameGraph (opts) {
   function label (d) {
     if (d.dummy) return ''
     if (!d.parent) return d.name
-    var optInfo = d.optimized && '—opt\'d—' ||
-      d.notOptimized && '—not opt\'d—' || ''
 
     var onStack = d.name ? d3.round(100 * (d.value / allSamples), 1) + '% on stack' : ''
     var top = stackTop(d)
@@ -61,10 +54,7 @@ function flameGraph (opts) {
 
     if (onStack && topOfStack) { onStack += ', ' }
 
-    var name = d.name.replace(labelRx, '') +
-      '<small>' + ' ' + optInfo + ' ' + onStack + ' ' + topOfStack + '</small>'
-
-    return name
+    return d.name + '<small>' + onStack + ' ' + topOfStack + '</small>'
   }
 
   function titleLabel (d) {
@@ -128,13 +118,6 @@ function flameGraph (opts) {
         var lt = categorizer(child)
         child.type = lt.type
         child.lang = lt.lang
-
-        if (optRx.test(child.name)) {
-          child.optimized = true
-        }
-        if (notOptRx.test(child.name)) {
-          child.notOptimized = true
-        }
 
         childValues += child.value
       })
@@ -221,7 +204,7 @@ function flameGraph (opts) {
     else if (d.type === 'v8')  { searchArea = label.split(' ')[0] }
     else if (d.type === 'regexp') { searchArea = label }
     else { searchArea = label.split(':')[0] }
-
+    console.log(searchArea, label, d)
     if (re.test(searchArea)) {
       d.highlight = color || true
     } else {
