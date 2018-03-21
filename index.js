@@ -11,7 +11,8 @@ var colors = {
   native: {h: 122, s: 50, l: 45},
   core: {h: 0, s: 0, l: 80},
   deps: {h: 244, s: 50, l: 65},
-  app: {h: 200, s: 50, l: 45}
+  app: {h: 200, s: 50, l: 45},
+  init: {h: 21, s: 81, l: 73}
 }
 colors.def = {h: 10, s: 66, l: 80}
 colors.js = {h: 10, s: 66, l: 80}
@@ -29,7 +30,6 @@ function flameGraph (opts) {
   var transitionDuration = 500
   var transitionEase = 'cubic-in-out' // tooltip offset
   var sort = true
-  var langs = false
   var tiers = false
   var filterNeeded = true
   var filterTypes = []
@@ -39,7 +39,7 @@ function flameGraph (opts) {
     element.scrollTop = element.scrollHeight
   })
 
-  var categorizer = opts.categorizer || langtier
+  var categorizer = opts.categorizer || categorize
   var exclude = opts.exclude || []
 
   function label (d) {
@@ -63,33 +63,35 @@ function flameGraph (opts) {
     return d.name + '\n' + (top
       ? 'Top of Stack:' + d3.round(100 * (top / allSamples), 1) + '% ' +
       '(' + top + ' of ' + allSamples + ' samples)\n'
-      : '') +
-    'On Stack:' + d3.round(100 * (d.value / allSamples), 1) + '% ' +
-    '(' + d.value + ' of ' + allSamples + ' samples)'
+      : '') + 'On Stack:' + d3.round(100 * (d.value / allSamples), 1) + '% ' +
+     '(' + d.value + ' of ' + allSamples + ' samples)'
   }
 
-  function langtier (child) {
+  function categorize (child) {
     var name = child.name
+
     // todo: C deps
     if (!/.js/.test(name)) {
       switch (true) {
         case /^Builtin:|^Stub:|v8::|^(.+)IC:|^.*Handler:/
-          .test(name): return {type: 'v8', lang: 'c'}
+          .test(name): return {type: 'v8'}
         case /^RegExp:/
-          .test(name): return {type: 'regexp', lang: 'c'}
+          .test(name): return {type: 'regexp'}
         case /apply$|call$|Arguments$/
-          .test(name): return {type: 'native', lang: 'js'}
-        case /\.$/.test(name): return {type: 'core', lang: 'js'}
-        default: return {type: 'cpp', lang: 'c'}
+          .test(name): return {type: 'native'}
+        case /\.$/.test(name): return {type: 'core'}
+        default: return {type: 'cpp'}
       }
       return
     }
 
+    if (/\[INIT\]/.test(name)) return {type: 'init'}
+
     switch (true) {
-      case / native /.test(name): return {type: 'native', lang: 'js'}
-      case (name.indexOf('/') === -1 || /internal\//.test(name) && !/ \//.test(name)): return {type: 'core', lang: 'js'}
-      case !/node_modules/.test(name): return {type: 'app', lang: 'js'}
-      default: return {type: 'deps', lang: 'js'}
+      case / native /.test(name): return {type: 'native'}
+      case (name.indexOf('/') === -1 || /internal\//.test(name) && !/ \//.test(name)): return {type: 'core'}
+      case !/node_modules/.test(name): return {type: 'app'}
+      default: return {type: 'deps'}
     }
   }
 
@@ -98,7 +100,7 @@ function flameGraph (opts) {
     if (data.children && (data.children.length > 0)) {
       data.children.forEach(filter)
       data.children.forEach(function (child) {
-        if (~filterTypes.indexOf(child.type) || ~filterTypes.indexOf(child.lang)) {
+        if (~filterTypes.indexOf(child.type)) {
           child.hide = true
         } else {
           child.hide = false
@@ -114,10 +116,9 @@ function flameGraph (opts) {
     if (data.children && (data.children.length > 0)) {
       data.children.forEach(augment)
       var childValues = 0
-      data.children.forEach(function (child) {
-        var lt = categorizer(child)
+      data.children.forEach(function (child, ix, children) {
+        var lt = categorizer(child, ix, children)
         child.type = lt.type
-        child.lang = lt.lang
 
         childValues += child.value
       })
@@ -204,7 +205,6 @@ function flameGraph (opts) {
     else if (d.type === 'v8')  { searchArea = label.split(' ')[0] }
     else if (d.type === 'regexp') { searchArea = label }
     else { searchArea = label.split(':')[0] }
-    console.log(searchArea, label, d)
     if (re.test(searchArea)) {
       d.highlight = color || true
     } else {
@@ -299,7 +299,7 @@ function flameGraph (opts) {
           .style('cursor', 'pointer')
           .style('stroke', function (d) {
             if (!d.parent) return 'rgba(0,0,0,0.7)'
-            return colorHash(d, 1.1, allSamples, langs, tiers)
+            return colorHash(d, 1.1, allSamples, tiers)
           })
           .attr('fill', function (d) {
             if (!d.parent) return '#FFF'
@@ -308,7 +308,7 @@ function flameGraph (opts) {
             if (typeof d.highlight === 'string') {
               highlightColor = d.highlight
             }
-            return d.highlight ? highlightColor : colorHash(d, undefined, allSamples, langs, tiers)
+            return d.highlight ? highlightColor : colorHash(d, undefined, allSamples, tiers)
           })
           .style('visibility', function (d) { return d.dummy ? 'hidden' : 'visible' })
 
@@ -354,7 +354,7 @@ function flameGraph (opts) {
       })
   }
 
-  function chart (s) {
+  function chart (s, firstRender) {
     selection = s
 
     if (!arguments.length) return chart
@@ -362,11 +362,12 @@ function flameGraph (opts) {
     selection.each(function (data) {
       allSamples = data.value
 
-      d3.select(this)
+      if (!firstRender) d3.select(this)
         .append('svg:svg')
         .attr('width', w)
         .attr('height', h)
         .attr('class', 'partition d3-flame-graph')
+        .attr('transition', 'transform 200ms ease-in-out')
 
       augment(data)
       filter(data)
@@ -414,15 +415,7 @@ function flameGraph (opts) {
     return chart
   }
 
-  chart.langs = function (_) {
-    if (_ === true) tiers = false
-    langs = _
-    if (selection) update()
-    return chart
-  }
-
   chart.tiers = function (_) {
-    if (_ === true) langs = false
     tiers = _
     if (selection) update()
     return chart
@@ -462,9 +455,8 @@ function flameGraph (opts) {
     svg.style.transform = 'scale(' + n + ')'
   }
 
-  chart.renderTree = function (tree) {
-    d3.select(element).datum(tree).call(chart)
-    element.removeChild(element.querySelectorAll('svg')[1])
+  chart.renderTree = function (data) {
+    d3.select(element).datum(data).call(chart, true)
   }
 
   chart.colors = colors
@@ -475,28 +467,23 @@ function flameGraph (opts) {
   
   d3.select(element).datum(tree).call(chart)
 
-  const svg = element.querySelector('svg')
-  svg.style.transition = 'transform 200ms ease-in-out'
-
   return chart
 }
 
 
 
-function colorHash (d, perc, allSamples, langs, tiers) {
+function colorHash (d, perc, allSamples, tiers) {
   if (!d.name) {
     return perc ? 'rgb(127, 127, 127)' : 'rgba(0, 0, 0, 0)'
   }
 
   perc = perc || 1
   var type = d.type || 'def'
-  var lang = d.lang || 'js'
 
   var key
 
-  if (!langs && !tiers) key = colors.def
+  if (!tiers) key = colors.def
 
-  if (langs) key = colors[lang]
   if (tiers) key = colors[type]
 
   var h = key.h
