@@ -1,6 +1,6 @@
 {
   "name": "d3-fg",
-  "version": "6.1.0",
+  "version": "6.2.0",
   "description": "Flamegraph visualization for d3 v3.5.x",
   "main": "index.js",
   "scripts": {
