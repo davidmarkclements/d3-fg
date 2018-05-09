@@ -2,7 +2,7 @@
 var hsl = require('hsl-to-rgb-for-reals')
 var rxEsc = require('escape-string-regexp')
 var d3 = require('d3')
-var diffScale = d3.scale.linear().range([0, 0.2])
+var diffScale = d3.scaleLinear().range([0, 0.2])
 var colors = {
   v8: {h: 67, s: 81, l: 65},
   inlinable: {h: 300, s: 100, l: 50},
@@ -29,7 +29,7 @@ function flameGraph (opts) {
   var w = opts.width || document.body.clientWidth * 0.89 // graph width
   var selection = null // selection
   var transitionDuration = 500
-  var transitionEase = 'cubic-in-out' // tooltip offset
+  var transitionEase = d3.easeCubicInOut
   var sort = true
   var tiers = false
   var filterNeeded = true
@@ -47,10 +47,10 @@ function flameGraph (opts) {
     if (d.dummy) return ''
     if (!d.parent) return d.name
 
-    var onStack = d.name ? d3.round(100 * (d.value / allSamples), 1) + '% on stack' : ''
+    var onStack = d.name ? Math.round(100 * (d.value / allSamples), 1) + '% on stack' : ''
     var top = stackTop(d)
     var topOfStack = d.name ? (top
-      ? d3.round(100 * (top / allSamples), 2) + '% stack top'
+      ? Math.round(100 * (top / allSamples), 2) + '% stack top'
       : '') : ''
 
     if (onStack && topOfStack) { onStack += ', ' }
@@ -62,9 +62,9 @@ function flameGraph (opts) {
     if (!d.parent) return ''
     var top = stackTop(d)
     return d.name + '\n' + (top
-      ? 'Top of Stack:' + d3.round(100 * (top / allSamples), 1) + '% ' +
+      ? 'Top of Stack:' + Math.round(100 * (top / allSamples), 1) + '% ' +
       '(' + top + ' of ' + allSamples + ' samples)\n'
-      : '') + 'On Stack:' + d3.round(100 * (d.value / allSamples), 1) + '% ' +
+      : '') + 'On Stack:' + Math.round(100 * (d.value / allSamples), 1) + '% ' +
      '(' + d.value + ' of ' + allSamples + ' samples)'
   }
 
@@ -235,20 +235,18 @@ function flameGraph (opts) {
     }
   }
 
-  var partition = d3.layout.partition()
-    .sort(doSort)
-    .value(function (d) { return d.v || d.value })
-    .children(function (d) { return d.c || d.children })
+  var partition = d3.partition()
 
   function translate (d) {
-    var x = d3.scale.linear().range([0, w])
+    var x = d3.scaleLinear().range([0, w])
     var parent = d.parent
     var depthOffset = parent && parent.hide ? 1 : 0
     while (parent && (parent = parent.parent)) {
       if (parent.hide) depthOffset += 1
     }
     var depth = d.depth - depthOffset
-    return 'translate(' + x(d.x) + ',' + (h - (depth * c) - c) + ')'
+    if (d.dummy) return ''
+    return 'translate(' + x(d.x0) + ',' + (h - (depth * c) - c) + ')'
   }
 
   function update () {
@@ -256,10 +254,17 @@ function flameGraph (opts) {
       .each(function (data) {
         filter(data)
 
+        data
+          .sort(doSort)
+          .sum(function (d) {
+            return d ? (d.v || d.value) : 0 
+          })
+        
         var nodes = partition(data)
-        var kx = w / data.dx
+
+        var kx = data.x1 / w
         var svg = d3.select(this).select('svg')
-        var g = svg.selectAll('g').data(nodes)
+        var g = svg.selectAll('g').data(data.descendants())
 
         svg.on('click', function (d) {
           if (d3.event.path[0] === this) {
@@ -275,22 +280,25 @@ function flameGraph (opts) {
         g.select('rect').transition()
           .duration(transitionDuration)
           .ease(transitionEase)
-          .attr('width', function (d) { return d.dx * kx })
+          .attr('width', function (d) {
+            return (d.x1 - d.x0) * kx
+          })
 
         var node = g.enter()
           .append('svg:g')
           .attr('transform', translate)
 
+
         node
           .append('svg:rect')
-          .attr('width', function (d) { return d.dx * kx })
+          .attr('width', function (d) { return (d.x1 - d.x0) * kx })
 
         node.append('svg:title')
 
         node.append('foreignObject')
           .append('xhtml:div')
 
-        node.attr('width', function (d) { return d.dx * kx })
+        node.attr('width', function (d) { return (d.x1 - d.x0) * kx })
           .attr('height', function (d) { return c })
           .attr('name', function (d) { return d.name })
           .attr('class', function (d) { return d.fade ? 'frame fade' : 'frame' })
@@ -320,13 +328,13 @@ function flameGraph (opts) {
           .transition()
           .duration(transitionDuration)
           .ease(transitionEase)
-          .attr('width', function (d) { return d.dx * kx })
+          .attr('width', function (d) { return (d.x1 - d.x0) * kx })
 
         g.select('foreignObject')
           .style('overflow', 'hidden')
           .attr('height', function (d) { return d.hide ? 0 : c })
           .select('div')
-          .style('display', function (d) { return (d.dx * kx < 35) || d.dummy ? 'none' : 'block' })
+          .style('display', function (d) { return ((d.x1 - d.x0) * kx < 35) || d.dummy ? 'none' : 'block' })
           .style('pointer-events', 'none')
           .style('white-space', 'nowrap')
           .style('text-overflow', 'ellipsis')
@@ -347,18 +355,13 @@ function flameGraph (opts) {
         g.on('click', zoom)
 
         var hidden = g.filter(function (d) { return d.hide })
-        hidden.forEach(function (d) {
-          hide(d)
-        })
-
+        hidden.each(hide)
         g.exit().remove()
       })
   }
 
-  function chart (s, firstRender) {
-    selection = s
-
-    if (!arguments.length) return chart
+  function chart (firstRender) {
+    selection = d3.select(element)
 
     selection.each(function (data) {
       allSamples = data.value
@@ -457,7 +460,8 @@ function flameGraph (opts) {
   }
 
   chart.renderTree = function (data) {
-    d3.select(element).datum(data).call(chart, true)
+    d3.select(element).datum(d3.hierarchy(data, function (d) { return d.c || d.children }))
+    chart(true)
   }
 
   chart.colors = colors
@@ -479,8 +483,8 @@ function flameGraph (opts) {
   }
 
   exclude.forEach(chart.typeHide)
-  
-  d3.select(element).datum(tree).call(chart)
+  d3.select(element).datum(d3.hierarchy(tree, function (d) { return d.c || d.children }))
+  chart()
 
   return chart
 }
@@ -547,9 +551,8 @@ function stackTop (d) {
 }
 
 function depth (tree) {
-  var layout = d3.layout.tree()
   var deepest = 0
-  layout.nodes(tree).forEach(function (d) {
+  var layout = d3.tree(tree, (d) => {
     if (d.depth > deepest) deepest = d.depth
   })
   return deepest + 1
