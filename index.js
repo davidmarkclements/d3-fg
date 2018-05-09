@@ -20,6 +20,7 @@ colors.c = {h: 10, s: 66, l: 80}
 
 function flameGraph (opts) {
   var tree = opts.tree 
+  window.tree = tree
   var element = opts.element
   var c = 18 // cell height
   var h = opts.height || (depth(tree) + 2) * c // graph height
@@ -461,7 +462,21 @@ function flameGraph (opts) {
 
   chart.colors = colors
 
-  chart.update = update
+  chart.update = (hard) => {
+    if (hard) {
+        selection.each(function (data) {
+        allSamples = data.value
+
+        augment(data)
+        filter(data)
+        // "creative" fix for node ordering when partition is called for the first time
+        // partition(data)
+
+        // first draw
+        update()
+      })
+    } else update()
+  }
 
   exclude.forEach(chart.typeHide)
   
@@ -469,7 +484,6 @@ function flameGraph (opts) {
 
   return chart
 }
-
 
 
 function colorHash (d, perc, allSamples, tiers) {
