@@ -35,6 +35,7 @@ function flameGraph (opts) {
   var filterNeeded = true
   var filterTypes = []
   var allSamples
+  var updating = false
 
   document.addEventListener('DOMContentLoaded', () => {
     element.scrollTop = element.scrollHeight
@@ -267,15 +268,19 @@ function flameGraph (opts) {
           }
         })
 
-        g.transition()
-          .duration(transitionDuration)
-          .ease(transitionEase)
-          .attr('transform', translate)
+        // g.transition()
+        //   .duration(transitionDuration)
+        //   .ease(transitionEase)
+        //   .attr('transform', translate)
 
-        g.select('rect').transition()
-          .duration(transitionDuration)
-          .ease(transitionEase)
-          .attr('width', function (d) { return d.dx * kx })
+        g.attr('transform', translate)
+
+        // g.select('rect').transition()
+        //   .duration(transitionDuration)
+        //   .ease(transitionEase)
+        //   .attr('width', function (d) { return d.dx * kx })
+
+        g.select('rect').attr('width', function (d) { return d.dx * kx })
 
         var node = g.enter()
           .append('svg:g')
@@ -317,9 +322,9 @@ function flameGraph (opts) {
           .text(titleLabel)
 
         g.select('foreignObject')
-          .transition()
-          .duration(transitionDuration)
-          .ease(transitionEase)
+          // .transition()
+          // .duration(transitionDuration)
+          // .ease(transitionEase)
           .attr('width', function (d) { return d.dx * kx })
 
         g.select('foreignObject')
@@ -353,6 +358,7 @@ function flameGraph (opts) {
 
         g.exit().remove()
       })
+      updating = false
   }
 
   function chart (s, firstRender) {
@@ -368,7 +374,7 @@ function flameGraph (opts) {
         .attr('width', w)
         .attr('height', h)
         .attr('class', 'partition d3-flame-graph')
-        .attr('transition', 'transform 200ms ease-in-out')
+        // .attr('transition', 'transform 200ms ease-in-out')
 
       augment(data)
       filter(data)
@@ -463,6 +469,8 @@ function flameGraph (opts) {
   chart.colors = colors
 
   chart.update = (hard) => {
+    if (updating) return
+    updating = true
     if (hard) {
         selection.each(function (data) {
         allSamples = data.value
@@ -474,6 +482,7 @@ function flameGraph (opts) {
 
         // first draw
         update()
+
       })
     } else update()
   }
