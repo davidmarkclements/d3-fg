@@ -174,7 +174,7 @@ function flameGraph (opts) {
   }
 
   function searchTree (d, term, color) {
-    var re = term instanceof RegExp ? term : new RegExp(rxEsc(term), 'i') 
+    var re = term instanceof RegExp ? term : new RegExp(rxEsc(term), 'i')
     var label = d.data.name
 
     if (d.children) {
@@ -437,7 +437,9 @@ function flameGraph (opts) {
   }
 
   chart.setGraphZoom = function (n) {
-    svg.style.transform = 'scale(' + n + ')'
+    d3.select(element)
+      .select('svg')
+      .style('transform', 'scale(' + n + ')')
   }
 
   chart.renderTree = function (data) {
