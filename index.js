@@ -257,12 +257,12 @@ function flameGraph (opts) {
         data
           .sort(doSort)
           .sum(function (d) {
-            return d ? (d.v || d.value) : 0 
+            return d ? (d.v || d.value) : 0
           })
-        
+
         var nodes = partition(data)
 
-        var kx = data.x1 / w
+        var kx = w
         var svg = d3.select(this).select('svg')
         var g = svg.selectAll('g').data(data.descendants())
 
