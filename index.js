@@ -241,10 +241,13 @@ function flameGraph (opts) {
         filter(data)
 
         data
-          .sort(doSort)
           .sum(function (d) {
-            return d ? (d.v || d.value) : 0
+            const childValues = d.children
+              ? d.children.reduce((a, b) => a + b.value, 0)
+              : 0
+            return d.value - childValues
           })
+          .sort(doSort)
 
         var nodes = partition(data)
 
