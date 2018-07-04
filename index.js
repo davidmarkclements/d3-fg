@@ -44,7 +44,6 @@ function flameGraph (opts) {
   var exclude = opts.exclude || []
 
   function label (d) {
-    if (d.dummy) return ''
     if (!d.parent) return d.data.name
 
     var onStack = d.data.name ? Math.round(100 * (d.data.value / allSamples), 1) + '% on stack' : ''
@@ -69,7 +68,7 @@ function flameGraph (opts) {
   }
 
   function categorize (child) {
-    var name = child.data.name
+    var name = child.name
 
     // todo: C deps
     if (!/.js/.test(name)) {
@@ -101,44 +100,28 @@ function flameGraph (opts) {
     if (data.children && (data.children.length > 0)) {
       data.children.forEach(filter)
       data.children.forEach(function (child) {
-        if (~filterTypes.indexOf(child.type)) {
-          child.hide = true
+        if (~filterTypes.indexOf(child.data.type)) {
+          child.data.hide = true
         } else {
-          child.hide = false
+          child.data.hide = false
         }
       })
     }
   }
 
   function augment (data) {
-    // Augment partitioning layout with "dummy" nodes so that internal nodes'
-    // values dictate their width. Annoying, but seems to be least painful
-    // option.  https://github.com/mbostock/d3/pull/574
     if (data.children && (data.children.length > 0)) {
       data.children.forEach(augment)
-      var childValues = 0
       data.children.forEach(function (child, ix, children) {
-        var lt = categorizer(child, ix, children)
-        child.type = lt.type
-
-        childValues += child.value
+        var lt = categorizer(child.data, ix, children)
+        child.data.type = lt.type
       })
-      if (childValues < data.value) {
-        data.children.push(
-          {
-            name: '',
-            value: data.value - childValues,
-            top: 0,
-            dummy: true
-          }
-        )
-      }
     }
   }
 
   function hide (d) {
-    if (!d.original) {
-      d.original = d.data.value
+    if (!d.data.original) {
+      d.data.original = d.data.value
     }
     d.data.value = 0
     if (d.children) {
@@ -147,9 +130,9 @@ function flameGraph (opts) {
   }
 
   function show (d) {
-    d.fade = false
-    if (d.original) {
-      d.data.value = d.original
+    d.data.fade = false
+    if (d.data.original) {
+      d.data.value = d.data.original
     }
     if (d.children) {
       d.children.forEach(show)
@@ -178,7 +161,7 @@ function flameGraph (opts) {
 
   function fadeAncestors (d) {
     if (d.parent) {
-      d.parent.fade = true
+      d.parent.data.fade = true
       fadeAncestors(d.parent)
     }
   }
@@ -199,25 +182,25 @@ function flameGraph (opts) {
         searchTree(child, term, color)
       })
     }
-    if (d.hide) { return }
+    if (d.data.hide) { return }
 
     var searchArea
-    if (d.type === 'cpp') { searchArea = label.split('[')[0] }
-    else if (d.type === 'v8')  { searchArea = label.split(' ')[0] }
-    else if (d.type === 'regexp') { searchArea = label }
+    if (d.data.type === 'cpp') { searchArea = label.split('[')[0] }
+    else if (d.data.type === 'v8')  { searchArea = label.split(' ')[0] }
+    else if (d.data.type === 'regexp') { searchArea = label }
     else { searchArea = label.split(':')[0] }
     if (re.test(searchArea)) {
-      d.highlight = color || true
+      d.data.highlight = color || true
     } else {
-      d.highlight = false
+      d.data.highlight = false
     }
   }
 
   function clear (d, color) {
-    if (color && d.highlight === color) {
-      d.highlight = false
+    if (color && d.data.highlight === color) {
+      d.data.highlight = false
     }
-    if (!color) { d.highlight = false }
+    if (!color) { d.data.highlight = false }
     if (d.children) {
       d.children.forEach(function (child) {
         clear(child, color)
@@ -240,12 +223,11 @@ function flameGraph (opts) {
   function translate (d) {
     var x = d3.scaleLinear().range([0, w])
     var parent = d.parent
-    var depthOffset = parent && parent.hide ? 1 : 0
+    var depthOffset = parent && parent.data.hide ? 1 : 0
     while (parent && (parent = parent.parent)) {
-      if (parent.hide) depthOffset += 1
+      if (parent.data.hide) depthOffset += 1
     }
     var depth = d.depth - depthOffset
-    if (d.dummy) return ''
     return 'translate(' + x(d.x0) + ',' + (h - (depth * c) - c) + ')'
   }
 
@@ -301,10 +283,10 @@ function flameGraph (opts) {
         node.attr('width', function (d) { return (d.x1 - d.x0) * kx })
           .attr('height', function (d) { return c })
           .attr('name', function (d) { return d.data.name })
-          .attr('class', function (d) { return d.fade ? 'frame fade' : 'frame' })
+          .attr('class', function (d) { return d.data.fade ? 'frame fade' : 'frame' })
 
         g.select('rect')
-          .attr('height', function (d) { return d.hide ? 0 : c })
+          .attr('height', function (d) { return d.data.hide ? 0 : c })
           .style('cursor', 'pointer')
           .style('stroke', function (d) {
             if (!d.parent) return 'rgba(0,0,0,0.7)'
@@ -314,12 +296,11 @@ function flameGraph (opts) {
             if (!d.parent) return '#FFF'
             var highlightColor = '#E600E6'
 
-            if (typeof d.highlight === 'string') {
-              highlightColor = d.highlight
+            if (typeof d.data.highlight === 'string') {
+              highlightColor = d.data.highlight
             }
-            return d.highlight ? highlightColor : colorHash(d.data, undefined, allSamples, tiers)
+            return d.data.highlight ? highlightColor : colorHash(d.data, undefined, allSamples, tiers)
           })
-          .style('visibility', function (d) { return d.dummy ? 'hidden' : 'visible' })
 
         g.select('title')
           .text(titleLabel)
@@ -332,9 +313,9 @@ function flameGraph (opts) {
 
         g.select('foreignObject')
           .style('overflow', 'hidden')
-          .attr('height', function (d) { return d.hide ? 0 : c })
+          .attr('height', function (d) { return d.data.hide ? 0 : c })
           .select('div')
-          .style('display', function (d) { return ((d.x1 - d.x0) * kx < 35) || d.dummy ? 'none' : 'block' })
+          .style('display', function (d) { return ((d.x1 - d.x0) * kx < 35) ? 'none' : 'block' })
           .style('pointer-events', 'none')
           .style('white-space', 'nowrap')
           .style('text-overflow', 'ellipsis')
