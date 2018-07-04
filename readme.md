@@ -5,7 +5,7 @@ Flamegraph visualization for d3 v3.5.x
 ## Installation
 
 ```sh
-npm install d3-fg--save
+npm install d3-fg --save
 ```
 
 ## Usage
