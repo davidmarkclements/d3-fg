@@ -231,6 +231,10 @@ function flameGraph (opts) {
     return 'translate(' + x(d.x0) + ',' + (h - (depth * c) - c) + ')'
   }
 
+  function frameWidth (d) {
+    return (d.x1 - d.x0) * w
+  }
+
   function update () {
     selection
       .each(function (data) {
@@ -244,7 +248,6 @@ function flameGraph (opts) {
 
         var nodes = partition(data)
 
-        var kx = w
         var svg = d3.select(this).select('svg')
         var g = svg.selectAll('g').data(data.descendants())
 
@@ -262,9 +265,7 @@ function flameGraph (opts) {
         g.select('rect').transition()
           .duration(transitionDuration)
           .ease(transitionEase)
-          .attr('width', function (d) {
-            return (d.x1 - d.x0) * kx
-          })
+          .attr('width', frameWidth)
 
         var node = g.enter()
           .append('svg:g')
@@ -273,14 +274,14 @@ function flameGraph (opts) {
 
         node
           .append('svg:rect')
-          .attr('width', function (d) { return (d.x1 - d.x0) * kx })
+          .attr('width', frameWidth)
 
         node.append('svg:title')
 
         node.append('foreignObject')
           .append('xhtml:div')
 
-        node.attr('width', function (d) { return (d.x1 - d.x0) * kx })
+        node.attr('width', frameWidth)
           .attr('height', function (d) { return c })
           .attr('name', function (d) { return d.data.name })
           .attr('class', function (d) { return d.data.fade ? 'frame fade' : 'frame' })
@@ -309,13 +310,13 @@ function flameGraph (opts) {
           .transition()
           .duration(transitionDuration)
           .ease(transitionEase)
-          .attr('width', function (d) { return (d.x1 - d.x0) * kx })
+          .attr('width', frameWidth)
 
         g.select('foreignObject')
           .style('overflow', 'hidden')
           .attr('height', function (d) { return d.data.hide ? 0 : c })
           .select('div')
-          .style('display', function (d) { return ((d.x1 - d.x0) * kx < 35) ? 'none' : 'block' })
+          .style('display', function (d) { return (frameWidth(d) < 35) ? 'none' : 'block' })
           .style('pointer-events', 'none')
           .style('white-space', 'nowrap')
           .style('text-overflow', 'ellipsis')
@@ -345,7 +346,7 @@ function flameGraph (opts) {
     selection = d3.select(element)
 
     selection.each(function (data) {
-      allSamples = data.value
+      allSamples = data.data.value
 
       if (!firstRender) d3.select(this)
         .append('svg:svg')
