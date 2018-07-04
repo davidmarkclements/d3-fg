@@ -45,31 +45,31 @@ function flameGraph (opts) {
 
   function label (d) {
     if (d.dummy) return ''
-    if (!d.parent) return d.name
+    if (!d.parent) return d.data.name
 
-    var onStack = d.name ? Math.round(100 * (d.value / allSamples), 1) + '% on stack' : ''
+    var onStack = d.data.name ? Math.round(100 * (d.data.value / allSamples), 1) + '% on stack' : ''
     var top = stackTop(d)
-    var topOfStack = d.name ? (top
+    var topOfStack = d.data.name ? (top
       ? Math.round(100 * (top / allSamples), 2) + '% stack top'
       : '') : ''
 
     if (onStack && topOfStack) { onStack += ', ' }
 
-    return d.name + ' <small>' + onStack + ' ' + topOfStack + '</small>'
+    return d.data.name + ' <small>' + onStack + ' ' + topOfStack + '</small>'
   }
 
   function titleLabel (d) {
     if (!d.parent) return ''
     var top = stackTop(d)
-    return d.name + '\n' + (top
+    return d.data.name + '\n' + (top
       ? 'Top of Stack:' + Math.round(100 * (top / allSamples), 1) + '% ' +
       '(' + top + ' of ' + allSamples + ' samples)\n'
-      : '') + 'On Stack:' + Math.round(100 * (d.value / allSamples), 1) + '% ' +
-     '(' + d.value + ' of ' + allSamples + ' samples)'
+      : '') + 'On Stack:' + Math.round(100 * (d.data.value / allSamples), 1) + '% ' +
+     '(' + d.data.value + ' of ' + allSamples + ' samples)'
   }
 
   function categorize (child) {
-    var name = child.name
+    var name = child.data.name
 
     // todo: C deps
     if (!/.js/.test(name)) {
@@ -138,9 +138,9 @@ function flameGraph (opts) {
 
   function hide (d) {
     if (!d.original) {
-      d.original = d.value
+      d.original = d.data.value
     }
-    d.value = 0
+    d.data.value = 0
     if (d.children) {
       d.children.forEach(hide)
     }
@@ -149,7 +149,7 @@ function flameGraph (opts) {
   function show (d) {
     d.fade = false
     if (d.original) {
-      d.value = d.original
+      d.data.value = d.original
     }
     if (d.children) {
       d.children.forEach(show)
@@ -192,7 +192,7 @@ function flameGraph (opts) {
 
   function searchTree (d, term, color) {
     var re = term instanceof RegExp ? term : new RegExp(rxEsc(term), 'i') 
-    var label = d.name
+    var label = d.data.name
 
     if (d.children) {
       d.children.forEach(function (child) {
@@ -300,7 +300,7 @@ function flameGraph (opts) {
 
         node.attr('width', function (d) { return (d.x1 - d.x0) * kx })
           .attr('height', function (d) { return c })
-          .attr('name', function (d) { return d.name })
+          .attr('name', function (d) { return d.data.name })
           .attr('class', function (d) { return d.fade ? 'frame fade' : 'frame' })
 
         g.select('rect')
@@ -308,7 +308,7 @@ function flameGraph (opts) {
           .style('cursor', 'pointer')
           .style('stroke', function (d) {
             if (!d.parent) return 'rgba(0,0,0,0.7)'
-            return colorHash(d, 1.1, allSamples, tiers)
+            return colorHash(d.data, 1.1, allSamples, tiers)
           })
           .attr('fill', function (d) {
             if (!d.parent) return '#FFF'
@@ -317,7 +317,7 @@ function flameGraph (opts) {
             if (typeof d.highlight === 'string') {
               highlightColor = d.highlight
             }
-            return d.highlight ? highlightColor : colorHash(d, undefined, allSamples, tiers)
+            return d.highlight ? highlightColor : colorHash(d.data, undefined, allSamples, tiers)
           })
           .style('visibility', function (d) { return d.dummy ? 'hidden' : 'visible' })
 
