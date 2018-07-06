@@ -239,17 +239,24 @@ function flameGraph (opts) {
           var dx = d.x1 - d.x0
           return dx * w / rootDx
         }
+        function sumChildValues (a, b) {
+          return a + (b.hide ? 0 : b.value)
+        }
 
         filter(data)
 
         data
           .sum(function (d) {
+            if (d.hide) return 0
             const childValues = d.children
-              ? d.children.reduce((a, b) => a + b.value, 0)
+              ? d.children.reduce(sumChildValues, 0)
               : 0
             return d.value - childValues
           })
           .sort(doSort)
+
+        // Make "all stacks" as wide as every visible stack.
+        data.value = data.children.reduce(sumChildValues, 0)
 
         var nodes = partition(data)
 
