@@ -369,10 +369,13 @@ function flameGraph (opts) {
 
       augment(data)
       filter(data)
-      // "creative" fix for node ordering when partition is called for the first time
-      partition(data)
 
       // first draw
+      // goto-bus-stop: Doing this twice because the `label()` function is not
+      // called the first time? No clue why that happens but calling this twice works…
+      // Without this the <foreignObject> elements are empty etc and none of the
+      // frames are visible.
+      update()
       update()
     })
   }
