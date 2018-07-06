@@ -305,22 +305,39 @@ function flameGraph (opts) {
 
         node
           .append('svg:rect')
+          .style('cursor', 'pointer')
           .attr('width', frameWidth)
 
         node.append('svg:title')
+          .text(titleLabel)
 
         node.append('foreignObject')
+          .style('overflow', 'hidden')
           .append('xhtml:div')
+            .style('pointer-events', 'none')
+            .style('white-space', 'nowrap')
+            .style('text-overflow', 'ellipsis')
+            .style('overflow', 'hidden')
+            .style('font-size', '12px')
+            .style('font-family', 'Verdana')
+            .style('margin-left', '4px')
+            .style('margin-right', '4px')
+            .style('line-height', '1.5')
+            .style('padding', '0')
+            .style('font-weight', '400')
+            .style('color', '#000')
             .append(label)
 
         node.attr('width', frameWidth)
           .attr('height', function (d) { return c })
           .attr('name', function (d) { return d.data.name })
-          .attr('class', function (d) { return d.data.fade ? 'frame fade' : 'frame' })
+          .classed('frame', true)
+
+        g.select('g')
+          .classed('fade', function (d) { return d.data.fade })
 
         g.select('rect')
           .attr('height', function (d) { return d.data.hide ? 0 : c })
-          .style('cursor', 'pointer')
           .style('stroke', function (d) {
             if (!d.parent) return 'rgba(0,0,0,0.7)'
             return colorHash(d.data, 1.1, allSamples, tiers)
@@ -335,9 +352,6 @@ function flameGraph (opts) {
             return d.data.highlight ? highlightColor : colorHash(d.data, undefined, allSamples, tiers)
           })
 
-        g.select('title')
-          .text(titleLabel)
-
         g.select('foreignObject')
           .transition()
           .duration(transitionDuration)
@@ -345,22 +359,9 @@ function flameGraph (opts) {
           .attr('width', frameWidth)
 
         g.select('foreignObject')
-          .style('overflow', 'hidden')
           .attr('height', function (d) { return d.data.hide ? 0 : c })
           .select('div')
           .style('display', function (d) { return (frameWidth(d) < 35) ? 'none' : 'block' })
-          .style('pointer-events', 'none')
-          .style('white-space', 'nowrap')
-          .style('text-overflow', 'ellipsis')
-          .style('overflow', 'hidden')
-          .style('font-size', '12px')
-          .style('font-family', 'Verdana')
-          .style('margin-left', '4px')
-          .style('margin-right', '4px')
-          .style('line-height', '1.5')
-          .style('padding', '0')
-          .style('font-weight', '400')
-          .style('color', '#000')
           .style('text-align', function (d) {
             return d.parent ? 'left' : 'center'
           })
