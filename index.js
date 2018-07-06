@@ -235,9 +235,8 @@ function flameGraph (opts) {
     selection
       .each(function (data) {
         function frameWidth (d) {
-          var rootDx = data.x1 - data.x0
           var dx = d.x1 - d.x0
-          return dx * w / rootDx
+          return dx * w
         }
         function sumChildValues (a, b) {
           return a + (b.hide || b.fade ? 0 : b.value)
