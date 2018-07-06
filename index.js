@@ -240,14 +240,14 @@ function flameGraph (opts) {
           return dx * w / rootDx
         }
         function sumChildValues (a, b) {
-          return a + (b.hide ? 0 : b.value)
+          return a + (b.hide || b.fade ? 0 : b.value)
         }
 
         filter(data)
 
         data
           .sum(function (d) {
-            if (d.hide) return 0
+            if (d.fade) return d.children.reduce(sumChildValues, 0)
             const childValues = d.children
               ? d.children.reduce(sumChildValues, 0)
               : 0
