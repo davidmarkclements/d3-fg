@@ -43,9 +43,11 @@ function flameGraph (opts) {
   var categorizer = opts.categorizer || categorize
   var exclude = opts.exclude || []
 
-  function label (d) {
-    if (!d.parent) return d.data.name
-
+  function labelName (d) {
+    return d.data.name
+  }
+  function labelStack (d) {
+    if (!d.parent) return null
     var onStack = d.data.name ? Math.round(100 * (d.data.value / allSamples), 1) + '% on stack' : ''
     var top = stackTop(d)
     var topOfStack = d.data.name ? (top
@@ -54,7 +56,20 @@ function flameGraph (opts) {
 
     if (onStack && topOfStack) { onStack += ', ' }
 
-    return d.data.name + ' <small>' + onStack + ' ' + topOfStack + '</small>'
+    return onStack + topOfStack
+  }
+  function label (d) {
+    var name = document.createTextNode(labelName(d))
+    var stack = labelStack(d)
+    if (stack) {
+      var frag = document.createDocumentFragment()
+      var small = document.createElement('small')
+      small.appendChild(document.createTextNode(stack))
+      frag.appendChild(name)
+      frag.appendChild(small)
+      return frag
+    }
+    return name
   }
 
   function titleLabel (d) {
@@ -288,7 +303,6 @@ function flameGraph (opts) {
           .append('svg:g')
           .attr('transform', translate)
 
-
         node
           .append('svg:rect')
           .attr('width', frameWidth)
@@ -297,6 +311,7 @@ function flameGraph (opts) {
 
         node.append('foreignObject')
           .append('xhtml:div')
+            .append(label)
 
         node.attr('width', frameWidth)
           .attr('height', function (d) { return c })
@@ -349,7 +364,6 @@ function flameGraph (opts) {
           .style('text-align', function (d) {
             return d.parent ? 'left' : 'center'
           })
-          .html(label)
 
         g.on('click', zoom)
 
