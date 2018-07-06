@@ -19,7 +19,7 @@ colors.js = {h: 10, s: 66, l: 80}
 colors.c = {h: 10, s: 66, l: 80}
 
 function flameGraph (opts) {
-  var tree = opts.tree 
+  var tree = opts.tree
   window.tree = tree
   var element = opts.element
   var c = 18 // cell height
@@ -231,13 +231,15 @@ function flameGraph (opts) {
     return 'translate(' + x(d.x0) + ',' + (h - (depth * c) - c) + ')'
   }
 
-  function frameWidth (d) {
-    return (d.x1 - d.x0) * w
-  }
-
   function update () {
     selection
       .each(function (data) {
+        function frameWidth (d) {
+          var rootDx = data.x1 - data.x0
+          var dx = d.x1 - d.x0
+          return dx * w / rootDx
+        }
+
         filter(data)
 
         data
