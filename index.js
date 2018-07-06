@@ -182,10 +182,21 @@ function flameGraph (opts) {
   }
 
   function zoom (d) {
+    console.time('zoom')
+    console.time('hideSiblings')
     hideSiblings(d)
+    console.timeEnd('hideSiblings')
+    hideSiblings(d)
+    console.time('show')
     show(d)
+    console.timeEnd('show')
+    console.time('fadeAncestors')
     fadeAncestors(d)
+    console.timeEnd('fadeAncestors')
+    console.time('update')
     update()
+    console.timeEnd('update')
+    console.timeEnd('zoom')
   }
 
   function searchTree (d, term, color) {
@@ -247,6 +258,7 @@ function flameGraph (opts) {
   }
 
   function update () {
+    console.group('update')
     selection
       .each(function (data) {
         function frameWidth (d) {
@@ -258,8 +270,11 @@ function flameGraph (opts) {
           return a + (b.hide || b.fade ? 0 : b.value)
         }
 
+        console.time('filter')
         filter(data)
+        console.timeEnd('filter')
 
+        console.time('sum/sort')
         data
           .sum(function (d) {
             // If this is the ancestor of a focused frame, use the same value (width) as the focused frame.
@@ -277,8 +292,11 @@ function flameGraph (opts) {
 
         // Make "all stacks" as wide as every visible stack.
         data.value = data.children.reduce(sumChildValues, 0)
+        console.timeEnd('sum/sort')
 
+        console.time('partition')
         var nodes = partition(data)
+        console.timeEnd('partition')
 
         var svg = d3.select(this).select('svg')
         var g = svg.selectAll('g').data(data.descendants())
@@ -289,6 +307,7 @@ function flameGraph (opts) {
           }
         })
 
+        console.time('transition')
         g.transition()
           .duration(transitionDuration)
           .ease(transitionEase)
@@ -299,6 +318,14 @@ function flameGraph (opts) {
           .ease(transitionEase)
           .attr('width', frameWidth)
 
+        g.select('foreignObject')
+          .transition()
+          .duration(transitionDuration)
+          .ease(transitionEase)
+          .attr('width', frameWidth)
+        console.timeEnd('transition')
+
+        console.time('enter')
         var node = g.enter()
           .append('svg:g')
           .attr('transform', translate)
@@ -332,10 +359,14 @@ function flameGraph (opts) {
           .attr('height', function (d) { return c })
           .attr('name', function (d) { return d.data.name })
           .classed('frame', true)
+        console.timeEnd('enter')
 
+        console.time('g:fade')
         g.select('g')
           .classed('fade', function (d) { return d.data.fade })
+        console.timeEnd('g:fade')
 
+        console.time('rect')
         g.select('rect')
           .attr('height', function (d) { return d.data.hide ? 0 : c })
           .style('stroke', function (d) {
@@ -351,13 +382,9 @@ function flameGraph (opts) {
             }
             return d.data.highlight ? highlightColor : colorHash(d.data, undefined, allSamples, tiers)
           })
+        console.timeEnd('rect')
 
-        g.select('foreignObject')
-          .transition()
-          .duration(transitionDuration)
-          .ease(transitionEase)
-          .attr('width', frameWidth)
-
+        console.time('text')
         g.select('foreignObject')
           .attr('height', function (d) { return d.data.hide ? 0 : c })
           .select('div')
@@ -365,6 +392,7 @@ function flameGraph (opts) {
           .style('text-align', function (d) {
             return d.parent ? 'left' : 'center'
           })
+        console.timeEnd('text')
 
         g.on('click', zoom)
 
@@ -372,6 +400,7 @@ function flameGraph (opts) {
         hidden.each(hide)
         g.exit().remove()
       })
+    console.groupEnd('update')
   }
 
   function chart (firstRender) {
