@@ -212,7 +212,7 @@ function flameGraph (opts) {
     if (typeof sort === 'function') {
       return sort(a, b)
     } else if (sort) {
-      return d3.ascending(a.name, b.name)
+      return d3.ascending(a.value.name, b.value.name)
     } else {
       return 0
     }
