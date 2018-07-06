@@ -313,8 +313,8 @@ function flameGraph (opts) {
 
         node.append('foreignObject')
           .style('overflow', 'hidden')
+          .style('pointer-events', 'none')
           .append('xhtml:div')
-            .style('pointer-events', 'none')
             .style('white-space', 'nowrap')
             .style('text-overflow', 'ellipsis')
             .style('overflow', 'hidden')
