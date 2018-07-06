@@ -239,6 +239,7 @@ function flameGraph (opts) {
           return dx * w
         }
         function sumChildValues (a, b) {
+          // If a child is hidden or is an ancestor of the focused frame, don't count it
           return a + (b.hide || b.fade ? 0 : b.value)
         }
 
@@ -246,7 +247,12 @@ function flameGraph (opts) {
 
         data
           .sum(function (d) {
+            // If this is the ancestor of a focused frame, use the same value (width) as the focused frame.
             if (d.fade) return d.children.reduce(sumChildValues, 0)
+
+            // d3 sums value + all child values to get the value for a node,
+            // we can set `value = specifiedValue - all child values` to counteract that.
+            // the `.value`s in our data already include the sum of all child values.
             const childValues = d.children
               ? d.children.reduce(sumChildValues, 0)
               : 0
@@ -370,10 +376,10 @@ function flameGraph (opts) {
       filter(data)
 
       // first draw
-      // goto-bus-stop: Doing this twice because the `label()` function is not
-      // called the first time? No clue why that happens but calling this twice works…
-      // Without this the <foreignObject> elements are empty etc and none of the
-      // frames are visible.
+      // goto-bus-stop: Doing this twice because lots of the reactive functions in
+      // update() are not called the first time? No clue why that happens but calling
+      // this twice works… Without this the <foreignObject> elements are empty etc and
+      // none of the frames are visible.
       update()
       update()
     })
