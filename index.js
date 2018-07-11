@@ -65,6 +65,7 @@ function flameGraph (opts) {
   var minHeight = opts.minHeight || 950
   h = h < minHeight ? minHeight : h
   var w = opts.width || document.body.clientWidth * 0.89 // graph width
+  var scaleWidth = d3.scaleLinear().range([0, w])
   var selection = null // selection
   var transitionDuration = 500
   var transitionEase = d3.easeCubicInOut
@@ -297,14 +298,13 @@ function flameGraph (opts) {
   var partition = d3.partition()
 
   function translate (d) {
-    var x = d3.scaleLinear().range([0, w])
     var parent = d.parent
     var depthOffset = parent && parent.data.hide ? 1 : 0
     while (parent && (parent = parent.parent)) {
       if (parent.data.hide) depthOffset += 1
     }
     var depth = d.depth - depthOffset
-    return 'translate(' + x(d.x0) + ',' + (h - (depth * c) - c) + ')'
+    return 'translate(' + scaleWidth(d.x0) + ',' + (h - (depth * c) - c) + ')'
   }
 
   function update () {
@@ -410,8 +410,7 @@ function flameGraph (opts) {
         var all = g.merge(node)
 
         time('g:fade', function () {
-          all.select('g')
-            .classed('fade', function (d) { return d.data.fade })
+          all.classed('fade', function (d) { return d.data.fade })
         })
 
         time('rect', function () {
@@ -479,6 +478,7 @@ function flameGraph (opts) {
   chart.width = function (_) {
     if (!arguments.length) { return w }
     w = _
+    scaleWidth = d3.scaleLinear().range([0, w])
     return chart
   }
 
