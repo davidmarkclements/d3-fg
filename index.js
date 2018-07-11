@@ -292,7 +292,7 @@ function flameGraph (opts) {
         }
         function sumChildValues (a, b) {
           // If a child is hidden or is (an ancestor of) the focused frame, don't count it
-          return a + (b.hide || b.fade || b === focused ? 0 : b.value)
+          return a + (b.fade || b === focused ? 0 : b.value)
         }
 
         time('filter', function () {
@@ -325,7 +325,7 @@ function flameGraph (opts) {
 
         var svg = d3.select(this).select('svg')
         var g = svg.selectAll('g').data(
-          data.descendants().filter(function (d) { return !d.data.hide })
+          data.descendants()
         )
 
         svg.on('click', function (d) {
@@ -432,9 +432,6 @@ function flameGraph (opts) {
         })
 
         all.on('click', zoom)
-
-        var hidden = all.filter(function (d) { return d.hide })
-        hidden.each(hide)
       })
     if (timing) console.groupEnd('update')
   }
