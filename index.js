@@ -337,6 +337,11 @@ function flameGraph (opts) {
           .attr('width', frameWidth)
         console.timeEnd('transition')
 
+        console.time('exit')
+        var exit = g.exit()
+        exit.remove()
+        console.timeEnd('exit')
+
         console.time('enter')
         var node = g.enter()
           .append('svg:g')
@@ -353,6 +358,7 @@ function flameGraph (opts) {
         node.append('foreignObject')
           .style('overflow', 'hidden')
           .style('pointer-events', 'none')
+          .attr('width', frameWidth)
           .append('xhtml:div')
             .style('white-space', 'nowrap')
             .style('text-overflow', 'ellipsis')
@@ -373,13 +379,15 @@ function flameGraph (opts) {
           .classed('frame', true)
         console.timeEnd('enter')
 
+        var all = g.merge(node)
+
         console.time('g:fade')
-        g.select('g')
+        all.select('g')
           .classed('fade', function (d) { return d.data.fade })
         console.timeEnd('g:fade')
 
         console.time('rect')
-        g.select('rect')
+        all.select('rect')
           .attr('height', function (d) { return d.data.hide ? 0 : c })
           .style('stroke', function (d) {
             if (!d.parent) return 'rgba(0,0,0,0.7)'
@@ -397,20 +405,19 @@ function flameGraph (opts) {
         console.timeEnd('rect')
 
         console.time('text')
-        g.select('foreignObject')
+        all.select('foreignObject')
           .attr('height', function (d) { return d.data.hide ? 0 : c })
           .select('div')
-          .style('display', function (d) { return (frameWidth(d) < 35) ? 'none' : 'block' })
-          .style('text-align', function (d) {
-            return d.parent ? 'left' : 'center'
-          })
+            .style('display', function (d) { return (frameWidth(d) < 35) ? 'none' : 'block' })
+            .style('text-align', function (d) {
+              return d.parent ? 'left' : 'center'
+            })
         console.timeEnd('text')
 
-        g.on('click', zoom)
+        all.on('click', zoom)
 
-        var hidden = g.filter(function (d) { return d.hide })
+        var hidden = all.filter(function (d) { return d.hide })
         hidden.each(hide)
-        g.exit().remove()
       })
     console.groupEnd('update')
   }
@@ -432,11 +439,6 @@ function flameGraph (opts) {
       filter(data)
 
       // first draw
-      // goto-bus-stop: Doing this twice because lots of the reactive functions in
-      // update() are not called the first time? No clue why that happens but calling
-      // this twice works… Without this the <foreignObject> elements are empty etc and
-      // none of the frames are visible.
-      update()
       update()
     })
   }
