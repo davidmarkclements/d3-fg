@@ -19,19 +19,13 @@ colors.js = {h: 10, s: 66, l: 80}
 colors.c = {h: 10, s: 66, l: 80}
 
 var css = `
-  .d3-flame-graph .frame {
-    transition: transform 500ms ease-in-out;
-  }
-
   .d3-flame-graph .frame rect {
     cursor: pointer;
-    transition: width 500ms ease-in-out;
   }
 
   .d3-flame-graph .frame foreignObject {
     overflow: hidden;
     pointer-events: none;
-    transition: width 500ms ease-in-out;
   }
 
   .d3-flame-graph .frame div {
@@ -365,6 +359,24 @@ function flameGraph (opts) {
           }
         })
 
+        time('transition', function () {
+          g.transition()
+            .duration(transitionDuration)
+            .ease(transitionEase)
+            .attr('transform', translate)
+
+          g.select('rect').transition()
+            .duration(transitionDuration)
+            .ease(transitionEase)
+            .attr('width', frameWidth)
+
+          g.select('foreignObject')
+            .transition()
+            .duration(transitionDuration)
+            .ease(transitionEase)
+            .attr('width', frameWidth)
+        })
+
         time('exit', function () {
           var exit = g.exit()
           exit.remove()
@@ -398,14 +410,11 @@ function flameGraph (opts) {
         var all = g.merge(node)
 
         time('g:fade', function () {
-          all
-            .classed('fade', function (d) { return d.data.fade })
-            .attr('transform', translate)
+          all.classed('fade', function (d) { return d.data.fade })
         })
 
         time('rect', function () {
           all.select('rect')
-            .attr('width', frameWidth)
             .attr('height', function (d) { return d.data.hide ? 0 : c })
             .style('stroke', function (d) {
               if (!d.parent) return 'rgba(0,0,0,0.7)'
@@ -424,7 +433,6 @@ function flameGraph (opts) {
 
         time('text', function () {
           all.select('foreignObject')
-            .attr('width', frameWidth)
             .attr('height', function (d) { return d.data.hide ? 0 : c })
             .select('div')
               .style('display', function (d) { return (frameWidth(d) < 35) ? 'none' : 'block' })
