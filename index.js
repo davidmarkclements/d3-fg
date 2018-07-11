@@ -33,6 +33,7 @@ function eventPath (event) {
 function flameGraph (opts) {
   var tree = opts.tree
   window.tree = tree
+  var timing = opts.timing || false
   var element = opts.element
   var c = 18 // cell height
   var h = opts.height || (depth(tree) + 2) * c // graph height
@@ -47,6 +48,15 @@ function flameGraph (opts) {
   var filterNeeded = true
   var filterTypes = []
   var allSamples
+
+  function time (name, fn) {
+    if (timing) {
+      console.time(name)
+      var result = fn()
+      console.timeEnd(name)
+      return result
+    } else return fn()
+  }
 
   document.addEventListener('DOMContentLoaded', () => {
     element.scrollTop = element.scrollHeight
@@ -194,21 +204,20 @@ function flameGraph (opts) {
   }
 
   function zoom (d) {
-    console.time('zoom')
-    console.time('hideSiblings')
-    hideSiblings(d)
-    console.timeEnd('hideSiblings')
-    hideSiblings(d)
-    console.time('show')
-    show(d)
-    console.timeEnd('show')
-    console.time('fadeAncestors')
-    fadeAncestors(d)
-    console.timeEnd('fadeAncestors')
-    console.time('update')
-    update()
-    console.timeEnd('update')
-    console.timeEnd('zoom')
+    time('zoom', function () {
+      time('hideSiblings', function () {
+        hideSiblings(d)
+      })
+      time('show', function () {
+        show(d)
+      })
+      time('fadeAncestors', function () {
+        fadeAncestors(d)
+      })
+      time('update', function () {
+        update()
+      })
+    })
   }
 
   function searchTree (d, term, color) {
@@ -270,7 +279,7 @@ function flameGraph (opts) {
   }
 
   function update () {
-    console.group('update')
+    if (timing) console.group('update')
     selection
       .each(function (data) {
         function frameWidth (d) {
@@ -282,33 +291,33 @@ function flameGraph (opts) {
           return a + (b.hide || b.fade ? 0 : b.value)
         }
 
-        console.time('filter')
-        filter(data)
-        console.timeEnd('filter')
+        time('filter', function () {
+          filter(data)
+        })
 
-        console.time('sum/sort')
-        data
-          .sum(function (d) {
-            // If this is the ancestor of a focused frame, use the same value (width) as the focused frame.
-            if (d.fade) return d.children.reduce(sumChildValues, 0)
+        time('sum/sort', function () {
+          data
+            .sum(function (d) {
+              // If this is the ancestor of a focused frame, use the same value (width) as the focused frame.
+              if (d.fade) return d.children.reduce(sumChildValues, 0)
 
-            // d3 sums value + all child values to get the value for a node,
-            // we can set `value = specifiedValue - all child values` to counteract that.
-            // the `.value`s in our data already include the sum of all child values.
-            const childValues = d.children
-              ? d.children.reduce(sumChildValues, 0)
-              : 0
-            return d.value - childValues
-          })
-          .sort(doSort)
+              // d3 sums value + all child values to get the value for a node,
+              // we can set `value = specifiedValue - all child values` to counteract that.
+              // the `.value`s in our data already include the sum of all child values.
+              const childValues = d.children
+                ? d.children.reduce(sumChildValues, 0)
+                : 0
+              return d.value - childValues
+            })
+            .sort(doSort)
 
-        // Make "all stacks" as wide as every visible stack.
-        data.value = data.children.reduce(sumChildValues, 0)
-        console.timeEnd('sum/sort')
+          // Make "all stacks" as wide as every visible stack.
+          data.value = data.children.reduce(sumChildValues, 0)
+        })
 
-        console.time('partition')
-        var nodes = partition(data)
-        console.timeEnd('partition')
+        var nodes = time('partition', function () {
+          return partition(data)
+        })
 
         var svg = d3.select(this).select('svg')
         var g = svg.selectAll('g').data(data.descendants().filter(function (d) { return !d.data.hide }))
@@ -319,107 +328,109 @@ function flameGraph (opts) {
           }
         })
 
-        console.time('transition')
-        g.transition()
-          .duration(transitionDuration)
-          .ease(transitionEase)
-          .attr('transform', translate)
+        time('transition', function () {
+          g.transition()
+            .duration(transitionDuration)
+            .ease(transitionEase)
+            .attr('transform', translate)
 
-        g.select('rect').transition()
-          .duration(transitionDuration)
-          .ease(transitionEase)
-          .attr('width', frameWidth)
+          g.select('rect').transition()
+            .duration(transitionDuration)
+            .ease(transitionEase)
+            .attr('width', frameWidth)
 
-        g.select('foreignObject')
-          .transition()
-          .duration(transitionDuration)
-          .ease(transitionEase)
-          .attr('width', frameWidth)
-        console.timeEnd('transition')
+          g.select('foreignObject')
+            .transition()
+            .duration(transitionDuration)
+            .ease(transitionEase)
+            .attr('width', frameWidth)
+        })
 
-        console.time('exit')
-        var exit = g.exit()
-        exit.remove()
-        console.timeEnd('exit')
+        time('exit', function () {
+          var exit = g.exit()
+          exit.remove()
+        })
 
-        console.time('enter')
-        var node = g.enter()
-          .append('svg:g')
-          .attr('transform', translate)
+        var node = time('enter', function () {
+          var node = g.enter()
+            .append('svg:g')
+            .attr('transform', translate)
 
-        node
-          .append('svg:rect')
-          .style('cursor', 'pointer')
-          .attr('width', frameWidth)
+          node
+            .append('svg:rect')
+            .style('cursor', 'pointer')
+            .attr('width', frameWidth)
 
-        node.append('svg:title')
-          .text(titleLabel)
+          node.append('svg:title')
+            .text(titleLabel)
 
-        node.append('foreignObject')
-          .style('overflow', 'hidden')
-          .style('pointer-events', 'none')
-          .attr('width', frameWidth)
-          .append('xhtml:div')
-            .style('white-space', 'nowrap')
-            .style('text-overflow', 'ellipsis')
+          node.append('foreignObject')
             .style('overflow', 'hidden')
-            .style('font-size', '12px')
-            .style('font-family', 'Verdana')
-            .style('margin-left', '4px')
-            .style('margin-right', '4px')
-            .style('line-height', '1.5')
-            .style('padding', '0')
-            .style('font-weight', '400')
-            .style('color', '#000')
-            .append(label)
+            .style('pointer-events', 'none')
+            .attr('width', frameWidth)
+            .append('xhtml:div')
+              .style('white-space', 'nowrap')
+              .style('text-overflow', 'ellipsis')
+              .style('overflow', 'hidden')
+              .style('font-size', '12px')
+              .style('font-family', 'Verdana')
+              .style('margin-left', '4px')
+              .style('margin-right', '4px')
+              .style('line-height', '1.5')
+              .style('padding', '0')
+              .style('font-weight', '400')
+              .style('color', '#000')
+              .append(label)
 
-        node.attr('width', frameWidth)
-          .attr('height', function (d) { return c })
-          .attr('name', function (d) { return d.data.name })
-          .classed('frame', true)
-        console.timeEnd('enter')
+          node.attr('width', frameWidth)
+            .attr('height', function (d) { return c })
+            .attr('name', function (d) { return d.data.name })
+            .classed('frame', true)
+
+          return node
+        })
 
         var all = g.merge(node)
 
-        console.time('g:fade')
-        all.select('g')
-          .classed('fade', function (d) { return d.data.fade })
-        console.timeEnd('g:fade')
+        time('g:fade', function () {
+          all.select('g')
+            .classed('fade', function (d) { return d.data.fade })
+        })
 
-        console.time('rect')
-        all.select('rect')
-          .attr('height', function (d) { return d.data.hide ? 0 : c })
-          .style('stroke', function (d) {
-            if (!d.parent) return 'rgba(0,0,0,0.7)'
-            return colorHash(d.data, 1.1, allSamples, tiers)
-          })
-          .attr('fill', function (d) {
-            if (!d.parent) return '#FFF'
-            var highlightColor = '#E600E6'
-
-            if (typeof d.data.highlight === 'string') {
-              highlightColor = d.data.highlight
-            }
-            return d.data.highlight ? highlightColor : colorHash(d.data, undefined, allSamples, tiers)
-          })
-        console.timeEnd('rect')
-
-        console.time('text')
-        all.select('foreignObject')
-          .attr('height', function (d) { return d.data.hide ? 0 : c })
-          .select('div')
-            .style('display', function (d) { return (frameWidth(d) < 35) ? 'none' : 'block' })
-            .style('text-align', function (d) {
-              return d.parent ? 'left' : 'center'
+        time('rect', function () {
+          all.select('rect')
+            .attr('height', function (d) { return d.data.hide ? 0 : c })
+            .style('stroke', function (d) {
+              if (!d.parent) return 'rgba(0,0,0,0.7)'
+              return colorHash(d.data, 1.1, allSamples, tiers)
             })
-        console.timeEnd('text')
+            .attr('fill', function (d) {
+              if (!d.parent) return '#FFF'
+              var highlightColor = '#E600E6'
+
+              if (typeof d.data.highlight === 'string') {
+                highlightColor = d.data.highlight
+              }
+              return d.data.highlight ? highlightColor : colorHash(d.data, undefined, allSamples, tiers)
+            })
+        })
+
+        time('text', function () {
+          all.select('foreignObject')
+            .attr('height', function (d) { return d.data.hide ? 0 : c })
+            .select('div')
+              .style('display', function (d) { return (frameWidth(d) < 35) ? 'none' : 'block' })
+              .style('text-align', function (d) {
+                return d.parent ? 'left' : 'center'
+              })
+        })
 
         all.on('click', zoom)
 
         var hidden = all.filter(function (d) { return d.hide })
         hidden.each(hide)
       })
-    console.groupEnd('update')
+    if (timing) console.groupEnd('update')
   }
 
   function chart (firstRender) {
