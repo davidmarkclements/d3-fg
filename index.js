@@ -71,10 +71,10 @@ function flameGraph (opts) {
   }
   function labelStack (d) {
     if (!d.parent) return null
-    var onStack = d.data.name ? Math.round(100 * (d.data.value / allSamples), 1) + '% on stack' : ''
-    var top = stackTop(d)
+    var onStack = d.data.name ? Math.round(100 * (d.data.value / allSamples) * 10) / 10 + '% on stack' : ''
+    var top = stackTop(d.data)
     var topOfStack = d.data.name ? (top
-      ? Math.round(100 * (top / allSamples), 2) + '% stack top'
+      ? Math.round(100 * (top / allSamples) * 100) / 100 + '% stack top'
       : '') : ''
 
     if (onStack && topOfStack) { onStack += ', ' }
@@ -97,11 +97,11 @@ function flameGraph (opts) {
 
   function titleLabel (d) {
     if (!d.parent) return ''
-    var top = stackTop(d)
+    var top = stackTop(d.data)
     return d.data.name + '\n' + (top
-      ? 'Top of Stack:' + Math.round(100 * (top / allSamples), 1) + '% ' +
+      ? 'Top of Stack:' + Math.round(100 * (top / allSamples) * 10) / 10 + '% ' +
       '(' + top + ' of ' + allSamples + ' samples)\n'
-      : '') + 'On Stack:' + Math.round(100 * (d.data.value / allSamples), 1) + '% ' +
+      : '') + 'On Stack:' + Math.round(100 * (d.data.value / allSamples) * 10) / 10 + '% ' +
      '(' + d.data.value + ' of ' + allSamples + ' samples)'
   }
 
