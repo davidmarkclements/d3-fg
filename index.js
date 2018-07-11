@@ -320,7 +320,9 @@ function flameGraph (opts) {
         })
 
         var svg = d3.select(this).select('svg')
-        var g = svg.selectAll('g').data(data.descendants().filter(function (d) { return !d.data.hide }))
+        var g = svg.selectAll('g').data(
+          data.descendants().filter(function (d) { return !d.data.hide })
+        )
 
         svg.on('click', function (d) {
           if (eventPath(d3.event)[0] === this) {
