@@ -82,17 +82,19 @@ function flameGraph (opts) {
     return onStack + topOfStack
   }
   function label (d) {
-    var name = document.createTextNode(labelName(d))
+    var name = labelName(d)
     var stack = labelStack(d)
+    // creating raw DOM here saves the browser a bunch of time parsing
+    // thousands of tiny html snippets
     if (stack) {
       var frag = document.createDocumentFragment()
       var small = document.createElement('small')
       small.appendChild(document.createTextNode(stack))
-      frag.appendChild(name)
+      frag.appendChild(document.createTextNode(name + ' '))
       frag.appendChild(small)
       return frag
     }
-    return name
+    return document.createTextNode(name)
   }
 
   function titleLabel (d) {
