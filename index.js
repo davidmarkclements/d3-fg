@@ -48,6 +48,7 @@ function flameGraph (opts) {
   var filterNeeded = true
   var filterTypes = []
   var allSamples
+  var focused = null
 
   function time (name, fn) {
     if (timing) {
@@ -205,6 +206,7 @@ function flameGraph (opts) {
 
   function zoom (d) {
     time('zoom', function () {
+      focused = d.data
       time('hideSiblings', function () {
         hideSiblings(d)
       })
@@ -287,8 +289,8 @@ function flameGraph (opts) {
           return dx * w
         }
         function sumChildValues (a, b) {
-          // If a child is hidden or is an ancestor of the focused frame, don't count it
-          return a + (b.hide || b.fade ? 0 : b.value)
+          // If a child is hidden or is (an ancestor of) the focused frame, don't count it
+          return a + (b.hide || b.fade || b === focused ? 0 : b.value)
         }
 
         time('filter', function () {
