@@ -181,9 +181,9 @@ function flameGraph (opts) {
     }
   }
 
-  function augment (data) {
+  function categorizeTree (data) {
     if (data.children && (data.children.length > 0)) {
-      data.children.forEach(augment)
+      data.children.forEach(categorizeTree)
       data.children.forEach(function (child, ix, children) {
         var lt = categorizer(child.data, ix, children)
         child.data.type = lt.type
@@ -453,7 +453,7 @@ function flameGraph (opts) {
         .append('style')
           .text(css)
 
-      augment(data)
+      categorizeTree(data)
       filter(data)
 
       // first draw
@@ -552,10 +552,8 @@ function flameGraph (opts) {
         selection.each(function (data) {
         allSamples = data.value
 
-        augment(data)
+        categorizeTree(data)
         filter(data)
-        // "creative" fix for node ordering when partition is called for the first time
-        // partition(data)
 
         // first draw
         update()
