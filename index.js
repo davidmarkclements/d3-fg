@@ -57,7 +57,6 @@ function eventPath (event) {
 
 function flameGraph (opts) {
   var tree = opts.tree
-  window.tree = tree
   var timing = opts.timing || false
   var element = opts.element
   var c = 18 // cell height
