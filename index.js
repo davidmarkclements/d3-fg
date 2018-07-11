@@ -18,6 +18,31 @@ colors.def = {h: 10, s: 66, l: 80}
 colors.js = {h: 10, s: 66, l: 80}
 colors.c = {h: 10, s: 66, l: 80}
 
+var css = `
+  .d3-flame-graph rect.frame {
+    cursor: pointer;
+  }
+
+  .d3-flame-graph .frame foreignObject {
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .d3-flame-graph .frame div {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    font-size: 12px;
+    font-family: Verdana;
+    margin-left: 4px;
+    margin-right: 4px;
+    line-height: 1.5;
+    padding: 0;
+    font-weight: 400;
+    color: #000;
+  }
+`
+
 function eventPath (event) {
   if (event.path) return event.path
   if (event.composedPath) return event.composedPath()
@@ -364,28 +389,14 @@ function flameGraph (opts) {
 
           node
             .append('svg:rect')
-            .style('cursor', 'pointer')
             .attr('width', frameWidth)
 
           node.append('svg:title')
             .text(titleLabel)
 
           node.append('foreignObject')
-            .style('overflow', 'hidden')
-            .style('pointer-events', 'none')
             .attr('width', frameWidth)
             .append('xhtml:div')
-              .style('white-space', 'nowrap')
-              .style('text-overflow', 'ellipsis')
-              .style('overflow', 'hidden')
-              .style('font-size', '12px')
-              .style('font-family', 'Verdana')
-              .style('margin-left', '4px')
-              .style('margin-right', '4px')
-              .style('line-height', '1.5')
-              .style('padding', '0')
-              .style('font-weight', '400')
-              .style('color', '#000')
               .append(label)
 
           node.attr('width', frameWidth)
@@ -448,6 +459,8 @@ function flameGraph (opts) {
         .attr('height', h)
         .attr('class', 'partition d3-flame-graph')
         .attr('transition', 'transform 200ms ease-in-out')
+        .append('style')
+          .text(css)
 
       augment(data)
       filter(data)
