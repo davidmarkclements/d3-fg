@@ -18,6 +18,18 @@ colors.def = {h: 10, s: 66, l: 80}
 colors.js = {h: 10, s: 66, l: 80}
 colors.c = {h: 10, s: 66, l: 80}
 
+function eventPath (event) {
+  if (event.path) return event.path
+  if (event.composedPath) return event.composedPath()
+  var target = event.target
+  var path = [target]
+  while ((target = target.parentElement)) {
+    path.push(target)
+  }
+  path.push(document, window)
+  return path
+}
+
 function flameGraph (opts) {
   var tree = opts.tree
   window.tree = tree
@@ -302,7 +314,7 @@ function flameGraph (opts) {
         var g = svg.selectAll('g').data(data.descendants())
 
         svg.on('click', function (d) {
-          if (d3.event.path[0] === this) {
+          if (eventPath(d3.event)[0] === this) {
             zoom(d)
           }
         })
