@@ -19,7 +19,7 @@ colors.js = {h: 10, s: 66, l: 80}
 colors.c = {h: 10, s: 66, l: 80}
 
 var css = `
-  .d3-flame-graph rect.frame {
+  .d3-flame-graph .frame rect {
     cursor: pointer;
   }
 
