@@ -358,15 +358,21 @@ function flameGraph (opts) {
 
           context.clearRect(0, 0, canvas.width, canvas.height)
 
+          var ease = 1
+          if (transitionStart !== null) {
+            var dt = (Date.now() - transitionStart) / transitionDuration
+            ease = transitionEase(dt > 1 ? 1 : dt)
+          }
+
           nodes.forEach(function (node) {
-            renderNode(context, node, STATE_IDLE)
+            renderNode(context, node, ease, STATE_IDLE)
           })
         }
       })
     if (timing) console.groupEnd('update')
   }
 
-  function renderNode (context, node, state) {
+  function renderNode (context, node, ease, state) {
     if (node.data.hide) return
 
     var depth = frameDepth(node)
@@ -375,11 +381,7 @@ function flameGraph (opts) {
 
     var x = scaleToWidth(node.x0)
 
-    if (transitionStart !== null && node.data.prev) {
-      var dt = (Date.now() - transitionStart) / transitionDuration
-      var ease = transitionEase(dt > 1 ? 1 : dt)
-      var pw = frameWidth(node.data.prev)
-      var px = scaleToWidth(node.data.prev.x0)
+    if (ease !== 1 && node.data.prev) {
       width = pw + ease * (width - pw)
       x = px + ease * (x - px)
     }
@@ -489,12 +491,12 @@ function flameGraph (opts) {
 
             if (target === hoverNode) return
 
-            if (hoverNode) renderNode(context, hoverNode, STATE_UNHOVER)
+            if (hoverNode) renderNode(context, hoverNode, 1, STATE_UNHOVER)
             hoverNode = target
 
             if (target) {
               this.style.cursor = 'pointer'
-              renderNode(context, target, STATE_HOVER)
+              renderNode(context, target, 1, STATE_HOVER)
               renderTitle(context, target)
             } else {
               this.style.cursor = 'default'
