@@ -90,12 +90,12 @@ function flameGraph (opts) {
     return onStack + topOfStack
   }
 
-  function titleLabel (d) {
+  function tooltipLabel (d) {
     if (!d.parent) return ''
     var top = stackTop(d.data)
-    return d.data.name + '\n' + (top
+    return d.data.name + '<br />' + (top
       ? 'Top of Stack:' + Math.round(100 * (top / allSamples) * 10) / 10 + '% ' +
-      '(' + top + ' of ' + allSamples + ' samples)\n'
+      '(' + top + ' of ' + allSamples + ' samples)<br />'
       : '') + 'On Stack:' + Math.round(100 * (d.data.value / allSamples) * 10) / 10 + '% ' +
      '(' + d.data.value + ' of ' + allSamples + ' samples)'
   }
@@ -452,11 +452,26 @@ function flameGraph (opts) {
     if (node.data.fade) context.restore()
   }
 
-  function renderTitle (context, node) {
-    // nothing for now
-    // this should add a dom node with the title
-    // (a DOM node is easier to remove after; else we would have to redraw the entire canvas)
-    titleLabel(node)
+  function renderTooltip (pos, node) {
+    var label = tooltipLabel(node)
+    var x = pos[0] + 3
+
+    var tooltip = d3.select(element).select('.d3-flame-graph-tooltip')
+      .style('top', (pos[1] + 16) + 'px')
+      .style('display', 'block')
+      .html(label)
+
+    if (x + 300 > window.innerWidth) {
+      tooltip.style('left', 'auto').style('right', '10px')
+    } else {
+      tooltip.style('right', 'auto').style('left', x + 'px')
+    }
+  }
+
+  function hideTooltip () {
+    d3.select(element).select('.d3-flame-graph-tooltip')
+      .style('display', 'none')
+      .empty()
   }
 
   function getNodeAt (offsetX, offsetY) {
@@ -479,8 +494,9 @@ function flameGraph (opts) {
       allSamples = data.data.value
 
       if (!firstRender) {
-        d3.select(this)
-          .append('canvas')
+        node = d3.select(this).append('div')
+          .style('position', 'relative')
+        node.append('canvas')
           .attr('width', w)
           .attr('height', h)
           .attr('class', 'partition d3-flame-graph')
@@ -501,11 +517,23 @@ function flameGraph (opts) {
             if (target) {
               this.style.cursor = 'pointer'
               renderNode(context, target, 1, STATE_HOVER)
-              renderTitle(context, target)
+              renderTooltip(d3.mouse(document.body), target)
             } else {
               this.style.cursor = 'default'
+              hideTooltip()
             }
           })
+        node.append('div')
+          .style('background', '#222')
+          .style('color', '#fff')
+          .style('border-radius', '3px')
+          .style('padding', '3px')
+          .style('font-size', '10pt')
+          .style('position', 'fixed')
+          .style('display', 'none')
+          .style('z-index', 1000)
+          .style('pointer-events', 'none') // ?
+          .classed('d3-flame-graph-tooltip', true)
       }
 
       categorizeTree(data)
