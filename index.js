@@ -8,7 +8,8 @@ var d3 = Object.assign(
   require('d3-ease'),
   require('d3-hierarchy'),
   require('d3-scale'),
-  require('d3-selection')
+  require('d3-selection'),
+  require('d3-zoom')
 )
 Object.defineProperty(d3, 'event', {
   get: function () { return require('d3-selection').event }
@@ -43,8 +44,9 @@ function flameGraph (opts) {
   var minHeight = opts.minHeight || 950
   h = h < minHeight ? minHeight : h
   var w = opts.width || document.body.clientWidth * 0.89 // graph width
-  var scaleToWidth = d3.scaleLinear().range([0, w])
-  var scaleToGraph = d3.scaleLinear().domain([0, w]).range([0, 1])
+  var scaleToWidth = null
+  var scaleToGraph = null
+  var panZoom = d3.zoom().on('zoom', function () { update() })
   var selection = null // selection
   var transitionDuration = 500
   var transitionEase = d3.easeCubicInOut
@@ -57,6 +59,15 @@ function flameGraph (opts) {
   var focusedFrame = null
   var hoverFrame = null
   var isAnimating = false
+
+  onresize()
+
+  function onresize () {
+    panZoom.translateExtent([[0, 0], [w, h]])
+
+    scaleToWidth = d3.scaleLinear().range([0, w])
+    scaleToGraph = d3.scaleLinear().domain([0, w]).range([0, 1])
+  }
 
   function time (name, fn) {
     if (timing) {
@@ -357,12 +368,23 @@ function flameGraph (opts) {
 
           context.clearRect(0, 0, canvas.width, canvas.height)
 
-          nodes.forEach(function (node) {
-            renderNode(context, node, ease, STATE_IDLE)
+          withZoomTransform(context, function () {
+            nodes.forEach(function (node) {
+              renderNode(context, node, ease, STATE_IDLE)
+            })
           })
         }
       })
     if (timing) console.groupEnd('update')
+  }
+
+  function withZoomTransform (context, fn) {
+    var transform = d3.zoomTransform(context.canvas)
+    context.save()
+    context.translate(transform.x, transform.y)
+    context.scale(transform.k, transform.k)
+    fn()
+    context.restore()
   }
 
   function saveAnimationStartingPoints () {
@@ -482,9 +504,10 @@ function flameGraph (opts) {
       .empty()
   }
 
-  function getNodeAt (offsetX, offsetY) {
-    var x = scaleToGraph(offsetX)
-    var y = h - offsetY
+  function getNodeAt (canvas, offsetX, offsetY) {
+    var transform = d3.zoomTransform(canvas)
+    var x = scaleToGraph(transform.invertX(offsetX))
+    var y = h - transform.invertY(offsetY)
     return nodes.find(function (node) {
       if (node.data.hide) return false
       if (node.x0 <= x && x <= node.x1) {
@@ -509,22 +532,31 @@ function flameGraph (opts) {
           .attr('height', h)
           .attr('class', 'partition d3-flame-graph')
           .attr('transition', 'transform 200ms ease-in-out')
+          .call(panZoom)
+          .on('wheel.zoom', null)
+          .on('dblclick.zoom', null)
           .on('click', function () {
-            var target = getNodeAt(d3.event.offsetX, d3.event.offsetY)
+            var target = getNodeAt(this, d3.event.offsetX, d3.event.offsetY)
             return zoom(target || nodes[0])
           })
           .on('mousemove', function () {
-            var target = getNodeAt(d3.event.offsetX, d3.event.offsetY)
+            var target = getNodeAt(this, d3.event.offsetX, d3.event.offsetY)
             var context = this.getContext('2d')
 
             if (target === hoverFrame) return
 
-            if (hoverFrame) renderNode(context, hoverFrame, 1, STATE_UNHOVER)
+            if (hoverFrame) {
+              withZoomTransform(context, function () {
+                renderNode(context, hoverFrame, 1, STATE_UNHOVER)
+              })
+            }
             hoverFrame = target
 
             if (target) {
               this.style.cursor = 'pointer'
-              renderNode(context, target, 1, STATE_HOVER)
+              withZoomTransform(context, function () {
+                renderNode(context, target, 1, STATE_HOVER)
+              })
               if (target.parent) showTooltip(d3.mouse(document.body), target)
               else hideTooltip()
             } else {
@@ -547,7 +579,6 @@ function flameGraph (opts) {
           .style('z-index', 1000)
           .style('pointer-events', 'none') // ?
           .classed('d3-flame-graph-tooltip', true)
-
 
         // Adjust canvas for high DPI screens
         // - Size the image up N× using attributes
@@ -576,14 +607,14 @@ function flameGraph (opts) {
   chart.height = function (_) {
     if (!arguments.length) { return h }
     h = _
+    onresize()
     return chart
   }
 
   chart.width = function (_) {
     if (!arguments.length) { return w }
     w = _
-    scaleToWidth = d3.scaleLinear().range([0, w])
-    scaleToGraph = d3.scaleLinear().domain([0, w]).range([0, 1])
+    onresize()
     return chart
   }
 
@@ -648,9 +679,7 @@ function flameGraph (opts) {
   }
 
   chart.setGraphZoom = function (n) {
-    d3.select(element)
-      .select('canvas')
-      .style('transform', 'scale(' + n + ')')
+    panZoom.scaleTo(d3.select(element).select('canvas'), n)
   }
 
   chart.renderTree = function (data) {

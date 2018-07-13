@@ -14,6 +14,7 @@
     "d3-hierarchy": "^1.1.6",
     "d3-scale": "^2.1.0",
     "d3-selection": "^1.3.0",
+    "d3-zoom": "^1.7.1",
     "escape-string-regexp": "^1.0.5",
     "hsl-to-rgb-for-reals": "^1.1.0"
   },
