@@ -401,11 +401,6 @@ function flameGraph (opts) {
       context.clearRect(x, h - (depth * c) - c, width, c)
     }
 
-    if (node.data.fade) {
-      context.save()
-      context.globalAlpha = 0.6
-    }
-
     context.fillStyle = fillColor
     context.strokeStyle = strokeColor
 
@@ -448,8 +443,6 @@ function flameGraph (opts) {
 
       context.restore()
     }
-
-    if (node.data.fade) context.restore()
   }
 
   function renderTooltip (pos, node) {
