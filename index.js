@@ -534,6 +534,22 @@ function flameGraph (opts) {
           .style('z-index', 1000)
           .style('pointer-events', 'none') // ?
           .classed('d3-flame-graph-tooltip', true)
+
+
+        // Adjust canvas for high DPI screens
+        // - Size the image up N× using attributes
+        // - Squash it down N× using CSS
+        // - Scale the context so 1px in all subsequent draw operations means Npx
+        if (window.devicePixelRatio && window.devicePixelRatio !== 1) {
+          node.select('canvas')
+            .style('width', w)
+            .style('height', h)
+            .attr('width', w * window.devicePixelRatio)
+            .attr('height', h * window.devicePixelRatio)
+
+          var context = node.select('canvas').node().getContext('2d')
+          context.scale(window.devicePixelRatio, window.devicePixelRatio)
+        }
       }
 
       categorizeTree(data)
