@@ -214,6 +214,12 @@ function flameGraph (opts) {
   }
 
   function zoom (d) {
+    if (transitionStart !== null) {
+      return // dont zoom during an animation for now
+      // Should be possible to do this by calling saveAnimationStartingPoints
+      // here, and doing Something Else (but not sure what the Something Else is)
+    }
+
     time('zoom', function () {
       focused = d.data
       time('hideSiblings', function () {
@@ -315,40 +321,30 @@ function flameGraph (opts) {
         nodes = data.descendants()
 
         var canvas = d3.select(this).select('canvas')
-        transitionStart = Date.now()
 
         if (nodes[0].data.prev) {
           animate()
         } else {
           time('render', function () {
             canvas.select(function () { render(this, nodes) })
-            savePrev()
+            saveAnimationStartingPoints()
           })
         }
 
         function animate () {
+          transitionStart = Date.now()
           function nextFrame () {
             canvas.select(function () { render(this, nodes) })
             if (Date.now() >= transitionStart + transitionDuration) {
               transitionStart = null
               // stabilise
               canvas.select(function () { render(this, nodes) })
-              savePrev()
+              saveAnimationStartingPoints()
             } else {
               requestAnimationFrame(nextFrame)
             }
           }
           requestAnimationFrame(nextFrame)
-        }
-
-        // Save previous values.
-        function savePrev () {
-          nodes.forEach(function (node) {
-            node.data.prev = {
-              x0: node.x0,
-              x1: node.x1,
-            }
-          })
         }
 
         function render (canvas, nodes) {
@@ -372,6 +368,15 @@ function flameGraph (opts) {
     if (timing) console.groupEnd('update')
   }
 
+  function saveAnimationStartingPoints () {
+    nodes.forEach(function (node) {
+      node.data.prev = {
+        x0: node.x0,
+        x1: node.x1,
+      }
+    })
+  }
+
   function renderNode (context, node, ease, state) {
     if (node.data.hide) return
 
@@ -382,6 +387,8 @@ function flameGraph (opts) {
     var x = scaleToWidth(node.x0)
 
     if (ease !== 1 && node.data.prev) {
+      var pw = frameWidth(node.data.prev)
+      var px = scaleToWidth(node.data.prev.x0)
       width = pw + ease * (width - pw)
       x = px + ease * (x - px)
     }
