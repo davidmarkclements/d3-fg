@@ -525,11 +525,16 @@ function flameGraph (opts) {
             if (target) {
               this.style.cursor = 'pointer'
               renderNode(context, target, 1, STATE_HOVER)
-              showTooltip(d3.mouse(document.body), target)
+              if (target.parent) showTooltip(d3.mouse(document.body), target)
+              else hideTooltip()
             } else {
               this.style.cursor = 'default'
               hideTooltip()
             }
+          })
+          .on('mouseout', function () {
+            this.style.cursor = 'default'
+            hideTooltip()
           })
         node.append('div')
           .style('background', '#222')
