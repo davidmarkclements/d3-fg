@@ -461,7 +461,22 @@ function flameGraph (opts) {
     }
   }
 
+  // Wait for 500 ms before showing the tooltip.
+  var tooltipFocusNode = null
+  var tooltipFocusTimeout = null
+  function showTooltip (pos, node) {
+    if (tooltipFocusNode === node) {
+      return renderTooltip(pos, node)
+    }
+    clearTimeout(tooltipFocusTimeout)
+    tooltipFocusTimeout = setTimeout(function () {
+      tooltipFocusNode = node
+      renderTooltip(pos, node)
+    }, 500)
+  }
+
   function hideTooltip () {
+    clearTimeout(tooltipFocusTimeout)
     d3.select(element).select('.d3-flame-graph-tooltip')
       .style('display', 'none')
       .empty()
@@ -510,7 +525,7 @@ function flameGraph (opts) {
             if (target) {
               this.style.cursor = 'pointer'
               renderNode(context, target, 1, STATE_HOVER)
-              renderTooltip(d3.mouse(document.body), target)
+              showTooltip(d3.mouse(document.body), target)
             } else {
               this.style.cursor = 'default'
               hideTooltip()
