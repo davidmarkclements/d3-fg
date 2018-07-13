@@ -46,7 +46,9 @@ function flameGraph (opts) {
   var w = opts.width || document.body.clientWidth * 0.89 // graph width
   var scaleToWidth = null
   var scaleToGraph = null
-  var panZoom = d3.zoom().on('zoom', function () { update() })
+  var panZoom = d3.zoom().on('zoom', function () {
+    update({ animate: false })
+  })
   var selection = null // selection
   var transitionDuration = 500
   var transitionEase = d3.easeCubicInOut
@@ -242,7 +244,7 @@ function flameGraph (opts) {
         fadeAncestors(d)
       })
       time('update', function () {
-        update()
+        update({ animate: true })
       })
     })
   }
@@ -295,8 +297,10 @@ function flameGraph (opts) {
     return a + (b.fade || b === focusedFrame ? 0 : b.value)
   }
 
-  function update () {
+  function update (opts) {
     if (timing) console.group('update')
+
+    var mayAnimate = opts && opts.animate
 
     selection
       .each(function (data) {
@@ -333,7 +337,7 @@ function flameGraph (opts) {
         var canvas = d3.select(this).select('canvas').node()
 
         // Animate if data was known for this set of nodes in the past.
-        if (nodes[0].data.prev) {
+        if (nodes[0].data.prev && mayAnimate) {
           animate()
         } else {
           time('render', function () {
