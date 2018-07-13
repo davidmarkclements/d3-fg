@@ -1,5 +1,7 @@
 var hsl = require('hsl-to-rgb-for-reals')
 var rxEsc = require('escape-string-regexp')
+
+// small pseudo d3
 var d3 = Object.assign(
   {},
   require('d3-array'),
@@ -8,6 +10,10 @@ var d3 = Object.assign(
   require('d3-scale'),
   require('d3-selection')
 )
+Object.defineProperty(d3, 'event', {
+  get: function () { return require('d3-selection').event }
+})
+
 var diffScale = d3.scaleLinear().range([0, 0.2])
 var colors = {
   v8: {h: 67, s: 81, l: 65},
@@ -42,6 +48,7 @@ function flameGraph (opts) {
   var selection = null // selection
   var transitionDuration = 500
   var transitionEase = d3.easeCubicInOut
+  var transitionStart = null
   var sort = true
   var tiers = false
   var filterNeeded = true
@@ -245,10 +252,9 @@ function flameGraph (opts) {
   }
 
   function clear (d, color) {
-    if (color && d.data.highlight === color) {
+    if (!color || d.data.highlight === color) {
       d.data.highlight = false
     }
-    if (!color) { d.data.highlight = false }
     if (d.children) {
       d.children.forEach(function (child) {
         clear(child, color)
@@ -275,6 +281,7 @@ function flameGraph (opts) {
 
   function update () {
     if (timing) console.group('update')
+
     selection
       .each(function (data) {
         time('filter', function () {
@@ -308,9 +315,41 @@ function flameGraph (opts) {
         nodes = data.descendants()
 
         var canvas = d3.select(this).select('canvas')
-        return time('render', function () {
-          canvas.select(function () { render(this, nodes) })
-        })
+        transitionStart = Date.now()
+
+        if (nodes[0].data.prev) {
+          animate()
+        } else {
+          time('render', function () {
+            canvas.select(function () { render(this, nodes) })
+            savePrev()
+          })
+        }
+
+        function animate () {
+          function nextFrame () {
+            canvas.select(function () { render(this, nodes) })
+            if (Date.now() >= transitionStart + transitionDuration) {
+              transitionStart = null
+              // stabilise
+              canvas.select(function () { render(this, nodes) })
+              savePrev()
+            } else {
+              requestAnimationFrame(nextFrame)
+            }
+          }
+          requestAnimationFrame(nextFrame)
+        }
+
+        // Save previous values.
+        function savePrev () {
+          nodes.forEach(function (node) {
+            node.data.prev = {
+              x0: node.x0,
+              x1: node.x1,
+            }
+          })
+        }
 
         function render (canvas, nodes) {
           var context = canvas.getContext('2d')
@@ -335,6 +374,16 @@ function flameGraph (opts) {
     if (width < 1) return
 
     var x = scaleToWidth(node.x0)
+
+    if (transitionStart !== null && node.data.prev) {
+      var dt = (Date.now() - transitionStart) / transitionDuration
+      var ease = transitionEase(dt > 1 ? 1 : dt)
+      var pw = frameWidth(node.data.prev)
+      var px = scaleToWidth(node.data.prev.x0)
+      width = pw + ease * (width - pw)
+      x = px + ease * (x - px)
+    }
+
     var strokeColor = node.parent ? colorHash(node.data, 1.1, allSamples, tiers) : 'rgba(0, 0, 0, 0.7)'
     var fillColor = node.parent
       ? (node.data.highlight
