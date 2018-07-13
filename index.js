@@ -48,15 +48,15 @@ function flameGraph (opts) {
   var selection = null // selection
   var transitionDuration = 500
   var transitionEase = d3.easeCubicInOut
-  var transitionStart = null
   var sort = true
   var tiers = false
   var filterNeeded = true
   var filterTypes = []
   var allSamples
-  var focused = null
   var nodes = null
-  var hoverNode = null
+  var focusedFrame = null
+  var hoverFrame = null
+  var isAnimating = false
 
   function time (name, fn) {
     if (timing) {
@@ -214,14 +214,13 @@ function flameGraph (opts) {
   }
 
   function zoom (d) {
-    if (transitionStart !== null) {
+    if (isAnimating) {
       return // dont zoom during an animation for now
       // Should be possible to do this by calling saveAnimationStartingPoints
       // here, and doing Something Else (but not sure what the Something Else is)
     }
-
     time('zoom', function () {
-      focused = d.data
+      focusedFrame = d.data
       time('hideSiblings', function () {
         hideSiblings(d)
       })
@@ -281,8 +280,8 @@ function flameGraph (opts) {
   var partition = d3.partition()
 
   function sumChildValues (a, b) {
-    // If a child is hidden or is (an ancestor of) the focused frame, don't count it
-    return a + (b.fade || b === focused ? 0 : b.value)
+    // If a child is hidden or is (an ancestor of) the focusedFrame frame, don't count it
+    return a + (b.fade || b === focusedFrame ? 0 : b.value)
   }
 
   function update () {
@@ -297,7 +296,7 @@ function flameGraph (opts) {
         time('sum/sort', function () {
           data
             .sum(function (d) {
-              // If this is the ancestor of a focused frame, use the same value (width) as the focused frame.
+              // If this is the ancestor of a focusedFrame frame, use the same value (width) as the focusedFrame frame.
               if (d.fade) return d.children.reduce(sumChildValues, 0)
 
               // d3 sums value + all child values to get the value for a node,
@@ -320,25 +319,28 @@ function flameGraph (opts) {
 
         nodes = data.descendants()
 
-        var canvas = d3.select(this).select('canvas')
+        var canvas = d3.select(this).select('canvas').node()
 
+        // Animate if data was known for this set of nodes in the past.
         if (nodes[0].data.prev) {
           animate()
         } else {
           time('render', function () {
-            canvas.select(function () { render(this, nodes) })
+            render(canvas, nodes)
             saveAnimationStartingPoints()
           })
         }
 
         function animate () {
-          transitionStart = Date.now()
+          isAnimating = true
+          var start = Date.now()
           function nextFrame () {
-            canvas.select(function () { render(this, nodes) })
-            if (Date.now() >= transitionStart + transitionDuration) {
-              transitionStart = null
-              // stabilise
-              canvas.select(function () { render(this, nodes) })
+            var dt = (Date.now() - start) / transitionDuration
+            var ease = transitionEase(dt > 1 ? 1 : dt)
+            render(canvas, nodes, ease)
+
+            if (ease === 1) {
+              isAnimating = false
               saveAnimationStartingPoints()
             } else {
               requestAnimationFrame(nextFrame)
@@ -347,18 +349,13 @@ function flameGraph (opts) {
           requestAnimationFrame(nextFrame)
         }
 
-        function render (canvas, nodes) {
+        function render (canvas, nodes, ease) {
+          if (ease == null) ease = 1
           var context = canvas.getContext('2d')
-          context.font = '12px Verdana'
+          context.font = '12px Verdana, sans-serif'
           context.textBaseline = 'bottom'
 
           context.clearRect(0, 0, canvas.width, canvas.height)
-
-          var ease = 1
-          if (transitionStart !== null) {
-            var dt = (Date.now() - transitionStart) / transitionDuration
-            ease = transitionEase(dt > 1 ? 1 : dt)
-          }
 
           nodes.forEach(function (node) {
             renderNode(context, node, ease, STATE_IDLE)
@@ -496,10 +493,10 @@ function flameGraph (opts) {
             var target = getNodeAt(d3.event.offsetX, d3.event.offsetY)
             var context = this.getContext('2d')
 
-            if (target === hoverNode) return
+            if (target === hoverFrame) return
 
-            if (hoverNode) renderNode(context, hoverNode, 1, STATE_UNHOVER)
-            hoverNode = target
+            if (hoverFrame) renderNode(context, hoverFrame, 1, STATE_UNHOVER)
+            hoverFrame = target
 
             if (target) {
               this.style.cursor = 'pointer'
