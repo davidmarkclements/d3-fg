@@ -1,6 +1,13 @@
 var hsl = require('hsl-to-rgb-for-reals')
 var rxEsc = require('escape-string-regexp')
-var d3 = require('d3')
+var d3 = Object.assign(
+  {},
+  require('d3-array'),
+  require('d3-ease'),
+  require('d3-hierarchy'),
+  require('d3-scale'),
+  require('d3-selection')
+)
 var diffScale = d3.scaleLinear().range([0, 0.2])
 var colors = {
   v8: {h: 67, s: 81, l: 65},
