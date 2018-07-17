@@ -1,12 +1,25 @@
-
 var hsl = require('hsl-to-rgb-for-reals')
 var rxEsc = require('escape-string-regexp')
-var d3 = require('d3')
+
+// small pseudo d3
+var d3 = Object.assign(
+  {},
+  require('d3-array'),
+  require('d3-ease'),
+  require('d3-hierarchy'),
+  require('d3-scale'),
+  require('d3-selection'),
+  require('d3-zoom')
+)
+Object.defineProperty(d3, 'event', {
+  get: function () { return require('d3-selection').event }
+})
+
 var diffScale = d3.scaleLinear().range([0, 0.2])
 var colors = {
   v8: {h: 67, s: 81, l: 65},
   inlinable: {h: 300, s: 100, l: 50},
-  regexp: {h: 27, s: 100, l: 50}, 
+  regexp: {h: 27, s: 100, l: 50},
   cpp: {h: 0, s: 50, l: 50},
   native: {h: 122, s: 50, l: 45},
   core: {h: 0, s: 0, l: 80},
@@ -18,53 +31,24 @@ colors.def = {h: 10, s: 66, l: 80}
 colors.js = {h: 10, s: 66, l: 80}
 colors.c = {h: 10, s: 66, l: 80}
 
-var css = `
-  .d3-flame-graph .frame rect {
-    cursor: pointer;
-  }
-
-  .d3-flame-graph .frame foreignObject {
-    overflow: hidden;
-    pointer-events: none;
-  }
-
-  .d3-flame-graph .frame div {
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    font-size: 12px;
-    font-family: Verdana;
-    margin-left: 4px;
-    margin-right: 4px;
-    line-height: 1.5;
-    padding: 0;
-    font-weight: 400;
-    color: #000;
-  }
-`
-
-function eventPath (event) {
-  if (event.path) return event.path
-  if (event.composedPath) return event.composedPath()
-  var target = event.target
-  var path = [target]
-  while ((target = target.parentElement)) {
-    path.push(target)
-  }
-  path.push(document, window)
-  return path
-}
+var STATE_IDLE = 0
+var STATE_HOVER = 1
+var STATE_UNHOVER = 2
 
 function flameGraph (opts) {
   var tree = opts.tree
   var timing = opts.timing || false
   var element = opts.element
   var c = 18 // cell height
-  var h = opts.height || (depth(tree) + 2) * c // graph height
+  var h = opts.height || (maxDepth(tree) + 2) * c // graph height
   var minHeight = opts.minHeight || 950
   h = h < minHeight ? minHeight : h
   var w = opts.width || document.body.clientWidth * 0.89 // graph width
-  var scaleWidth = d3.scaleLinear().range([0, w])
+  var scaleToWidth = null
+  var scaleToGraph = null
+  var panZoom = d3.zoom().on('zoom', function () {
+    update({ animate: false })
+  })
   var selection = null // selection
   var transitionDuration = 500
   var transitionEase = d3.easeCubicInOut
@@ -73,7 +57,19 @@ function flameGraph (opts) {
   var filterNeeded = true
   var filterTypes = []
   var allSamples
-  var focused = null
+  var nodes = null
+  var focusedFrame = null
+  var hoverFrame = null
+  var isAnimating = false
+
+  onresize()
+
+  function onresize () {
+    panZoom.translateExtent([[0, 0], [w, h]])
+
+    scaleToWidth = d3.scaleLinear().range([0, w])
+    scaleToGraph = d3.scaleLinear().domain([0, w]).range([0, 1])
+  }
 
   function time (name, fn) {
     if (timing) {
@@ -106,28 +102,13 @@ function flameGraph (opts) {
 
     return onStack + topOfStack
   }
-  function label (d) {
-    var name = labelName(d)
-    var stack = labelStack(d)
-    // creating raw DOM here saves the browser a bunch of time parsing
-    // thousands of tiny html snippets
-    if (stack) {
-      var frag = document.createDocumentFragment()
-      var small = document.createElement('small')
-      small.appendChild(document.createTextNode(stack))
-      frag.appendChild(document.createTextNode(name + ' '))
-      frag.appendChild(small)
-      return frag
-    }
-    return document.createTextNode(name)
-  }
 
-  function titleLabel (d) {
+  function tooltipLabel (d) {
     if (!d.parent) return ''
     var top = stackTop(d.data)
-    return d.data.name + '\n' + (top
+    return d.data.name + '<br />' + (top
       ? 'Top of Stack:' + Math.round(100 * (top / allSamples) * 10) / 10 + '% ' +
-      '(' + top + ' of ' + allSamples + ' samples)\n'
+      '(' + top + ' of ' + allSamples + ' samples)<br />'
       : '') + 'On Stack:' + Math.round(100 * (d.data.value / allSamples) * 10) / 10 + '% ' +
      '(' + d.data.value + ' of ' + allSamples + ' samples)'
   }
@@ -147,7 +128,6 @@ function flameGraph (opts) {
         case /\.$/.test(name): return {type: 'core'}
         default: return {type: 'cpp'}
       }
-      return
     }
 
     if (/\[INIT\]/.test(name)) return {type: 'init'}
@@ -158,6 +138,21 @@ function flameGraph (opts) {
       case !/node_modules/.test(name): return {type: 'app'}
       default: return {type: 'deps'}
     }
+  }
+
+  function frameDepth (node) {
+    var parent = node.parent
+    var depth = node.depth
+    if (parent && parent.data.hide) depth -= 1
+    while (parent && (parent = parent.parent)) {
+      if (parent.data.hide) depth -= 1
+    }
+    return depth
+  }
+
+  function frameWidth (d) {
+    var dx = d.x1 - d.x0
+    return dx * w
   }
 
   function filter (data) {
@@ -232,8 +227,13 @@ function flameGraph (opts) {
   }
 
   function zoom (d) {
+    if (isAnimating) {
+      return // dont zoom during an animation for now
+      // Should be possible to do this by calling saveAnimationStartingPoints
+      // here, and doing Something Else (but not sure what the Something Else is)
+    }
     time('zoom', function () {
-      focused = d.data
+      focusedFrame = d.data
       time('hideSiblings', function () {
         hideSiblings(d)
       })
@@ -244,7 +244,7 @@ function flameGraph (opts) {
         fadeAncestors(d)
       })
       time('update', function () {
-        update()
+        update({ animate: true })
       })
     })
   }
@@ -261,10 +261,7 @@ function flameGraph (opts) {
     if (d.data.hide) { return }
 
     var searchArea
-    if (d.data.type === 'cpp') { searchArea = label.split('[')[0] }
-    else if (d.data.type === 'v8')  { searchArea = label.split(' ')[0] }
-    else if (d.data.type === 'regexp') { searchArea = label }
-    else { searchArea = label.split(':')[0] }
+    if (d.data.type === 'cpp') { searchArea = label.split('[')[0] } else if (d.data.type === 'v8') { searchArea = label.split(' ')[0] } else if (d.data.type === 'regexp') { searchArea = label } else { searchArea = label.split(':')[0] }
     if (re.test(searchArea)) {
       d.data.highlight = color || true
     } else {
@@ -273,10 +270,9 @@ function flameGraph (opts) {
   }
 
   function clear (d, color) {
-    if (color && d.data.highlight === color) {
+    if (!color || d.data.highlight === color) {
       d.data.highlight = false
     }
-    if (!color) { d.data.highlight = false }
     if (d.children) {
       d.children.forEach(function (child) {
         clear(child, color)
@@ -296,29 +292,18 @@ function flameGraph (opts) {
 
   var partition = d3.partition()
 
-  function translate (d) {
-    var parent = d.parent
-    var depthOffset = parent && parent.data.hide ? 1 : 0
-    while (parent && (parent = parent.parent)) {
-      if (parent.data.hide) depthOffset += 1
-    }
-    var depth = d.depth - depthOffset
-    return 'translate(' + scaleWidth(d.x0) + ',' + (h - (depth * c) - c) + ')'
+  function sumChildValues (a, b) {
+    // If a child is hidden or is (an ancestor of) the focusedFrame frame, don't count it
+    return a + (b.fade || b === focusedFrame ? 0 : b.value)
   }
 
-  function update () {
+  function update (opts) {
     if (timing) console.group('update')
+
+    var mayAnimate = opts && opts.animate
+
     selection
       .each(function (data) {
-        function frameWidth (d) {
-          var dx = d.x1 - d.x0
-          return dx * w
-        }
-        function sumChildValues (a, b) {
-          // If a child is hidden or is (an ancestor of) the focused frame, don't count it
-          return a + (b.fade || b === focused ? 0 : b.value)
-        }
-
         time('filter', function () {
           filter(data)
         })
@@ -326,7 +311,7 @@ function flameGraph (opts) {
         time('sum/sort', function () {
           data
             .sum(function (d) {
-              // If this is the ancestor of a focused frame, use the same value (width) as the focused frame.
+              // If this is the ancestor of a focusedFrame frame, use the same value (width) as the focusedFrame frame.
               if (d.fade) return d.children.reduce(sumChildValues, 0)
 
               // d3 sums value + all child values to get the value for a node,
@@ -343,106 +328,198 @@ function flameGraph (opts) {
           data.value = data.children.reduce(sumChildValues, 0)
         })
 
-        var nodes = time('partition', function () {
+        time('partition', function () {
           return partition(data)
         })
 
-        var svg = d3.select(this).select('svg')
-        var g = svg.selectAll('g').data(
-          data.descendants()
-        )
+        nodes = data.descendants()
 
-        svg.on('click', function (d) {
-          if (eventPath(d3.event)[0] === this) {
-            zoom(d)
+        var canvas = d3.select(this).select('canvas').node()
+
+        // Animate if data was known for this set of nodes in the past.
+        if (nodes[0].data.prev && mayAnimate) {
+          animate()
+        } else {
+          time('render', function () {
+            render(canvas, nodes)
+            saveAnimationStartingPoints()
+          })
+        }
+
+        function animate () {
+          isAnimating = true
+          var start = Date.now()
+          function nextFrame () {
+            var dt = (Date.now() - start) / transitionDuration
+            var ease = transitionEase(dt > 1 ? 1 : dt)
+            render(canvas, nodes, ease)
+
+            if (ease === 1) {
+              isAnimating = false
+              saveAnimationStartingPoints()
+            } else {
+              requestAnimationFrame(nextFrame)
+            }
           }
-        })
+          requestAnimationFrame(nextFrame)
+        }
 
-        time('transition', function () {
-          g.transition()
-            .duration(transitionDuration)
-            .ease(transitionEase)
-            .attr('transform', translate)
+        function render (canvas, nodes, ease) {
+          if (ease == null) ease = 1
+          var context = canvas.getContext('2d')
+          context.font = '12px Verdana, sans-serif'
+          context.textBaseline = 'bottom'
 
-          g.select('rect').transition()
-            .duration(transitionDuration)
-            .ease(transitionEase)
-            .attr('width', frameWidth)
+          context.clearRect(0, 0, canvas.width, canvas.height)
 
-          g.select('foreignObject')
-            .transition()
-            .duration(transitionDuration)
-            .ease(transitionEase)
-            .attr('width', frameWidth)
-        })
-
-        time('exit', function () {
-          var exit = g.exit()
-          exit.remove()
-        })
-
-        var node = time('enter', function () {
-          var node = g.enter()
-            .append('svg:g')
-            .attr('transform', translate)
-
-          node
-            .append('svg:rect')
-            .attr('width', frameWidth)
-
-          node.append('svg:title')
-            .text(titleLabel)
-
-          node.append('foreignObject')
-            .attr('width', frameWidth)
-            .append('xhtml:div')
-              .append(label)
-
-          node.attr('width', frameWidth)
-            .attr('height', function (d) { return c })
-            .attr('name', function (d) { return d.data.name })
-            .classed('frame', true)
-
-          return node
-        })
-
-        var all = g.merge(node)
-
-        time('g:fade', function () {
-          all.classed('fade', function (d) { return d.data.fade })
-        })
-
-        time('rect', function () {
-          all.select('rect')
-            .attr('height', function (d) { return d.data.hide ? 0 : c })
-            .style('stroke', function (d) {
-              if (!d.parent) return 'rgba(0,0,0,0.7)'
-              return colorHash(d.data, 1.1, allSamples, tiers)
+          withZoomTransform(context, function () {
+            nodes.forEach(function (node) {
+              renderNode(context, node, ease, STATE_IDLE)
             })
-            .attr('fill', function (d) {
-              if (!d.parent) return '#FFF'
-              var highlightColor = '#E600E6'
-
-              if (typeof d.data.highlight === 'string') {
-                highlightColor = d.data.highlight
-              }
-              return d.data.highlight ? highlightColor : colorHash(d.data, undefined, allSamples, tiers)
-            })
-        })
-
-        time('text', function () {
-          all.select('foreignObject')
-            .attr('height', function (d) { return d.data.hide ? 0 : c })
-            .select('div')
-              .style('display', function (d) { return (frameWidth(d) < 35) ? 'none' : 'block' })
-              .style('text-align', function (d) {
-                return d.parent ? 'left' : 'center'
-              })
-        })
-
-        all.on('click', zoom)
+          })
+        }
       })
     if (timing) console.groupEnd('update')
+  }
+
+  function withZoomTransform (context, fn) {
+    var transform = d3.zoomTransform(context.canvas)
+    context.save()
+    context.translate(transform.x, transform.y)
+    context.scale(transform.k, transform.k)
+    fn()
+    context.restore()
+  }
+
+  function saveAnimationStartingPoints () {
+    nodes.forEach(function (node) {
+      node.data.prev = {
+        x0: node.x0,
+        x1: node.x1,
+      }
+    })
+  }
+
+  function renderNode (context, node, ease, state) {
+    if (node.data.hide) return
+
+    var depth = frameDepth(node)
+    var width = frameWidth(node)
+    if (width < 1) return
+
+    var x = scaleToWidth(node.x0)
+
+    if (ease !== 1 && node.data.prev) {
+      var pw = frameWidth(node.data.prev)
+      var px = scaleToWidth(node.data.prev.x0)
+      width = pw + ease * (width - pw)
+      x = px + ease * (x - px)
+    }
+
+    var strokeColor = node.parent ? colorHash(node.data, 1.1, allSamples, tiers) : 'rgba(0, 0, 0, 0.7)'
+    var fillColor = node.parent
+      ? (node.data.highlight
+        ? (typeof node.data.highlight === 'string' ? node.data.highlight : '#e600e6')
+        : colorHash(node.data, undefined, allSamples, tiers))
+      : '#fff'
+
+    if (state === STATE_HOVER || state === STATE_UNHOVER) {
+      context.clearRect(x, h - (depth * c) - c, width, c)
+    }
+
+    context.fillStyle = fillColor
+    context.strokeStyle = strokeColor
+
+    context.beginPath()
+    context.rect(x, h - (depth * c) - c, width, c)
+    context.stroke()
+
+    if (state === STATE_HOVER) {
+      context.save()
+      context.globalAlpha = 0.8
+      context.fill()
+      context.restore()
+    } else {
+      context.fill()
+    }
+
+    if (width >= 35) {
+      context.save()
+      context.clip()
+      context.font = '12px Verdana'
+      context.fillStyle = '#000'
+
+      // Center the "all stacks" text
+      if (!node.parent) {
+        context.textAlign = 'center'
+        x += width / 2
+      } else {
+        x += 4 // add padding to other nodes
+      }
+
+      var label = labelName(node)
+      context.fillText(label, x, h - (depth * c) - 1)
+
+      var stack = labelStack(node)
+      if (stack) {
+        var offs = context.measureText(label + ' ').width
+        context.font = '10px Verdana'
+        context.fillText(stack, x + offs, h - (depth * c) - 2)
+      }
+
+      context.restore()
+    }
+  }
+
+  function renderTooltip (pos, node) {
+    var label = tooltipLabel(node)
+    var x = pos[0] + 3
+
+    var tooltip = d3.select(element).select('.d3-flame-graph-tooltip')
+      .style('top', (pos[1] + 16) + 'px')
+      .style('display', 'block')
+      .html(label)
+
+    if (x + 300 > window.innerWidth) {
+      tooltip.style('left', 'auto').style('right', '10px')
+    } else {
+      tooltip.style('right', 'auto').style('left', x + 'px')
+    }
+  }
+
+  // Wait for 500 ms before showing the tooltip.
+  var tooltipFocusNode = null
+  var tooltipFocusTimeout = null
+  function showTooltip (pos, node) {
+    if (tooltipFocusNode === node) {
+      return renderTooltip(pos, node)
+    }
+    clearTimeout(tooltipFocusTimeout)
+    tooltipFocusTimeout = setTimeout(function () {
+      tooltipFocusNode = node
+      renderTooltip(pos, node)
+    }, 500)
+  }
+
+  function hideTooltip () {
+    clearTimeout(tooltipFocusTimeout)
+    d3.select(element).select('.d3-flame-graph-tooltip')
+      .style('display', 'none')
+      .empty()
+  }
+
+  function getNodeAt (canvas, offsetX, offsetY) {
+    var transform = d3.zoomTransform(canvas)
+    var x = scaleToGraph(transform.invertX(offsetX))
+    var y = h - transform.invertY(offsetY)
+    return nodes.find(function (node) {
+      if (node.data.hide) return false
+      if (node.x0 <= x && x <= node.x1) {
+        var nodeY = frameDepth(node) * c
+        return nodeY <= y && y <= nodeY + c
+      }
+      return false
+    })
   }
 
   function chart (firstRender) {
@@ -451,14 +528,77 @@ function flameGraph (opts) {
     selection.each(function (data) {
       allSamples = data.data.value
 
-      if (!firstRender) d3.select(this)
-        .append('svg:svg')
-        .attr('width', w)
-        .attr('height', h)
-        .attr('class', 'partition d3-flame-graph')
-        .attr('transition', 'transform 200ms ease-in-out')
-        .append('style')
-          .text(css)
+      if (!firstRender) {
+        node = d3.select(this).append('div')
+          .style('position', 'relative')
+        node.append('canvas')
+          .attr('width', w)
+          .attr('height', h)
+          .attr('class', 'partition d3-flame-graph')
+          .attr('transition', 'transform 200ms ease-in-out')
+          .call(panZoom)
+          .on('wheel.zoom', null)
+          .on('dblclick.zoom', null)
+          .on('click', function () {
+            var target = getNodeAt(this, d3.event.offsetX, d3.event.offsetY)
+            return zoom(target || nodes[0])
+          })
+          .on('mousemove', function () {
+            var target = getNodeAt(this, d3.event.offsetX, d3.event.offsetY)
+            var context = this.getContext('2d')
+
+            if (target === hoverFrame) return
+
+            if (hoverFrame) {
+              withZoomTransform(context, function () {
+                renderNode(context, hoverFrame, 1, STATE_UNHOVER)
+              })
+            }
+            hoverFrame = target
+
+            if (target) {
+              this.style.cursor = 'pointer'
+              withZoomTransform(context, function () {
+                renderNode(context, target, 1, STATE_HOVER)
+              })
+              if (target.parent) showTooltip(d3.mouse(document.body), target)
+              else hideTooltip()
+            } else {
+              this.style.cursor = 'default'
+              hideTooltip()
+            }
+          })
+          .on('mouseout', function () {
+            this.style.cursor = 'default'
+            hideTooltip()
+          })
+        node.append('div')
+          .style('background', '#222')
+          .style('color', '#fff')
+          .style('border-radius', '3px')
+          .style('padding', '3px')
+          .style('font-size', '10pt')
+          .style('position', 'fixed')
+          .style('display', 'none')
+          .style('z-index', 1000)
+          .style('pointer-events', 'none') // ?
+          .classed('d3-flame-graph-tooltip', true)
+
+        // Adjust canvas for high DPI screens
+        // - Size the image up N× using attributes
+        // - Squash it down N× using CSS
+        // - Scale the context so 1px in all subsequent draw operations means Npx
+        if (window.devicePixelRatio && window.devicePixelRatio !== 1) {
+          node.select('canvas')
+            .style('width', w)
+            .style('height', h)
+            .attr('width', w * window.devicePixelRatio)
+            .attr('height', h * window.devicePixelRatio)
+
+          var context = node.select('canvas').node().getContext('2d')
+          context.scale(window.devicePixelRatio, window.devicePixelRatio)
+        }
+      }
 
       categorizeTree(data)
       filter(data)
@@ -471,13 +611,14 @@ function flameGraph (opts) {
   chart.height = function (_) {
     if (!arguments.length) { return h }
     h = _
+    onresize()
     return chart
   }
 
   chart.width = function (_) {
     if (!arguments.length) { return w }
     w = _
-    scaleWidth = d3.scaleLinear().range([0, w])
+    onresize()
     return chart
   }
 
@@ -542,9 +683,7 @@ function flameGraph (opts) {
   }
 
   chart.setGraphZoom = function (n) {
-    d3.select(element)
-      .select('svg')
-      .style('transform', 'scale(' + n + ')')
+    panZoom.scaleTo(d3.select(element).select('canvas'), n)
   }
 
   chart.renderTree = function (data) {
@@ -556,7 +695,7 @@ function flameGraph (opts) {
 
   chart.update = (hard) => {
     if (hard) {
-        selection.each(function (data) {
+      selection.each(function (data) {
         allSamples = data.value
 
         categorizeTree(data)
@@ -574,7 +713,6 @@ function flameGraph (opts) {
 
   return chart
 }
-
 
 function colorHash (d, perc, allSamples, tiers) {
   if (!d.name) {
@@ -606,9 +744,9 @@ function colorHash (d, perc, allSamples, tiers) {
   l *= perc
 
   var a = 0.8
-  if (l > .8) {
+  if (l > 0.8) {
     a += diffScale(l - 0.8)
-    l = .8
+    l = 0.8
   }
 
   var rgb = hsl(h, s, l)
@@ -624,7 +762,7 @@ function stackTop (d) {
   d.children
     .forEach(function (child) {
       if (
-          !child.children ||
+        !child.children ||
           child.children.filter(function (c) { return c.hide }).length
       ) {
         if (child.hide) {
@@ -636,14 +774,13 @@ function stackTop (d) {
   return top
 }
 
-function depth (tree) {
+function maxDepth (tree) {
   var deepest = 0
-  var layout = d3.tree(tree, (d) => {
+  d3.tree(tree, (d) => {
     if (d.depth > deepest) deepest = d.depth
   })
   return deepest + 1
 }
-
 
 module.exports = flameGraph
 module.exports.colors = colors
