@@ -1,16 +1,16 @@
 # d3-fg
 
-Flamegraph visualization for d3 v3.5.x
+Flamegraph visualization for d3 v5.x
 
 ## Installation
 
 ```sh
-npm install d3-fg--save
+npm install d3-fg --save
 ```
 
 ## Usage
 
-d3-fg is currently built against [d3](http://npm.im/d3) v3.5.x.
+d3-fg is currently built against [d3](http://npm.im/d3) v5.x.
 
 ```js
 var tree = require('./data.json') // d3 json tree 
