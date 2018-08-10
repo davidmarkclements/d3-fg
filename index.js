@@ -43,6 +43,7 @@ function flameGraph (opts) {
   var h = opts.height || (maxDepth(tree) + 2) * c // graph height
   var minHeight = opts.minHeight || 950
   h = h < minHeight ? minHeight : h
+  h += opts.topOffset || 0
   var w = opts.width || document.body.clientWidth * 0.89 // graph width
   var scaleToWidth = null
   var scaleToGraph = null
@@ -797,11 +798,10 @@ function stackTop (d) {
 }
 
 function maxDepth (tree) {
-  var deepest = 0
-  d3.tree(tree, (d) => {
-    if (d.depth > deepest) deepest = d.depth
-  })
-  return deepest + 1
+  if (!tree.children) {
+    return 1
+  }
+  return tree.children.map(maxDepth).reduce((prev, next) => Math.max(prev, next), 0) + 1
 }
 
 module.exports = flameGraph
