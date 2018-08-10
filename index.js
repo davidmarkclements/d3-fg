@@ -471,17 +471,28 @@ function flameGraph (opts) {
     }
   }
 
-  function renderTooltip (pos, node) {
+  function renderTooltip (node) {
+    var wrapper = d3.select(element)
+    var canvas = wrapper.select('canvas').node()
+    var transform = d3.zoomTransform(canvas)
+    var x = scaleToWidth(node.x0) + canvas.getBoundingClientRect().left
+    // y = the bottom of the node - the scroll from the top
+    // (because the tooltip uses absolute positioning)
+    var y = h - frameDepth(node) * c - wrapper.node().scrollTop
     var label = tooltipLabel(node)
-    var x = pos[0] + 3
 
     var tooltip = d3.select(element).select('.d3-flame-graph-tooltip')
-      .style('top', (pos[1] + 16) + 'px')
+      .style('top', y + 'px')
       .style('display', 'block')
       .html(label)
 
     if (x + 300 > window.innerWidth) {
-      tooltip.style('left', 'auto').style('right', '10px')
+      // 300px is an arbitrary cut off point. if it's "too near"
+      // to the right edge, instead align with the rightmost end of
+      // the node
+      var right = canvas.getBoundingClientRect().left + w
+      x = window.innerWidth - right + scaleToWidth(1 - node.x1)
+      tooltip.style('left', 'auto').style('right', x + 'px')
     } else {
       tooltip.style('right', 'auto').style('left', x + 'px')
     }
@@ -490,22 +501,32 @@ function flameGraph (opts) {
   // Wait for 500 ms before showing the tooltip.
   var tooltipFocusNode = null
   var tooltipFocusTimeout = null
-  function showTooltip (pos, node) {
+  function showTooltip (node) {
     if (tooltipFocusNode === node) {
-      return renderTooltip(pos, node)
+      return renderTooltip(node)
     }
     clearTimeout(tooltipFocusTimeout)
     tooltipFocusTimeout = setTimeout(function () {
       tooltipFocusNode = node
-      renderTooltip(pos, node)
+      renderTooltip(node)
     }, 500)
   }
 
   function hideTooltip () {
     clearTimeout(tooltipFocusTimeout)
-    d3.select(element).select('.d3-flame-graph-tooltip')
-      .style('display', 'none')
-      .empty()
+    tooltipFocusNode = null
+    tooltipFocusTimeout = setTimeout(function () {
+      d3.select(element).select('.d3-flame-graph-tooltip')
+        .style('display', 'none')
+        .empty()
+    }, 250)
+  }
+
+  // cancel hiding the tooltip, used when the cursor moves
+  // from the hovered node to the tooltip or vice versa to
+  // cancel the mouseout event from the previously focused one.
+  function preventHideTooltip () {
+    clearTimeout(tooltipFocusTimeout)
   }
 
   function getNodeAt (canvas, offsetX, offsetY) {
@@ -561,7 +582,7 @@ function flameGraph (opts) {
               withZoomTransform(context, function () {
                 renderNode(context, target, 1, STATE_HOVER)
               })
-              if (target.parent) showTooltip(d3.mouse(document.body), target)
+              if (target.parent) showTooltip(target)
               else hideTooltip()
             } else {
               this.style.cursor = 'default'
@@ -581,8 +602,9 @@ function flameGraph (opts) {
           .style('position', 'fixed')
           .style('display', 'none')
           .style('z-index', 1000)
-          .style('pointer-events', 'none') // ?
           .classed('d3-flame-graph-tooltip', true)
+          .on('mouseover', preventHideTooltip)
+          .on('mouseout', hideTooltip)
 
         // Adjust canvas for high DPI screens
         // - Size the image up N× using attributes
