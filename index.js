@@ -775,11 +775,10 @@ function stackTop (d) {
 }
 
 function maxDepth (tree) {
-  var deepest = 0
-  d3.tree(tree, (d) => {
-    if (d.depth > deepest) deepest = d.depth
-  })
-  return deepest + 1
+  if (!tree.children) {
+    return 1
+  }
+  return tree.children.map(maxDepth).reduce((prev, next) => Math.max(prev, next), 0) + 1
 }
 
 module.exports = flameGraph
