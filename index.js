@@ -43,6 +43,7 @@ function flameGraph (opts) {
   var h = opts.height || (maxDepth(tree) + 2) * c // graph height
   var minHeight = opts.minHeight || 950
   h = h < minHeight ? minHeight : h
+  h += opts.topOffset || 0
   var w = opts.width || document.body.clientWidth * 0.89 // graph width
   var scaleToWidth = null
   var scaleToGraph = null
