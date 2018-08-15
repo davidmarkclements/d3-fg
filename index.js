@@ -5,6 +5,7 @@ var rxEsc = require('escape-string-regexp')
 var d3 = Object.assign(
   {},
   require('d3-array'),
+  require('d3-dispatch'),
   require('d3-ease'),
   require('d3-hierarchy'),
   require('d3-scale'),
@@ -50,7 +51,8 @@ function flameGraph (opts) {
   var panZoom = d3.zoom().on('zoom', function () {
     update({ animate: false })
   })
-  var selection = null // selection
+  var dispatch = d3.dispatch('zoom')
+  var selection = null
   var transitionDuration = 500
   var transitionEase = d3.easeCubicInOut
   var sort = true
@@ -248,6 +250,8 @@ function flameGraph (opts) {
         update({ animate: true })
       })
     })
+
+    dispatch.call('zoom', null, d.data)
   }
 
   function searchTree (d, term, color) {
@@ -729,6 +733,16 @@ function flameGraph (opts) {
       })
     } else update()
   }
+
+  chart.zoom = (data = nodes[0].data) => {
+    // nodes[0] = root node
+    // users of this method can zoom in on a data point
+    // instead of a node.
+    const node = nodes.find(n => n.data === data)
+    zoom(node || nodes[0])
+  }
+
+  chart.on = dispatch.on.bind(dispatch)
 
   exclude.forEach(chart.typeHide)
   d3.select(element).datum(d3.hierarchy(tree, function (d) { return d.c || d.children }))
