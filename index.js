@@ -63,7 +63,7 @@ function flameGraph (opts) {
   var nodes = null
   var focusedFrame = null
   var hoverFrame = null
-  var isAnimating = false
+  var currentAnimation = null
 
   onresize()
 
@@ -230,11 +230,14 @@ function flameGraph (opts) {
   }
 
   function zoom (d) {
-    if (isAnimating) {
-      return // dont zoom during an animation for now
-      // Should be possible to do this by calling saveAnimationStartingPoints
-      // here, and doing Something Else (but not sure what the Something Else is)
+    if (currentAnimation) {
+      currentAnimation.cancel()
+      // save points before clearing the animation,
+      // so that it uses the current mid-animation coords as starting points
+      saveAnimationStartingPoints()
+      currentAnimation = null
     }
+
     time('zoom', function () {
       focusedFrame = d.data
       time('hideSiblings', function () {
@@ -352,21 +355,15 @@ function flameGraph (opts) {
         }
 
         function animate () {
-          isAnimating = true
-          var start = Date.now()
-          function nextFrame () {
-            var dt = (Date.now() - start) / transitionDuration
-            var ease = transitionEase(dt > 1 ? 1 : dt)
+          currentAnimation = createAnimation({
+            duration: transitionDuration,
+            ease: transitionEase
+          }, (ease) => {
             render(canvas, nodes, ease)
-
-            if (ease === 1) {
-              isAnimating = false
-              saveAnimationStartingPoints()
-            } else {
-              requestAnimationFrame(nextFrame)
-            }
-          }
-          requestAnimationFrame(nextFrame)
+          }, () => {
+            currentAnimation = null
+            saveAnimationStartingPoints()
+          })
         }
 
         function render (canvas, nodes, ease) {
@@ -398,9 +395,14 @@ function flameGraph (opts) {
 
   function saveAnimationStartingPoints () {
     nodes.forEach(function (node) {
+      // If an animation is ongoing, use the current positions as the starting position for the new animation
+      // This makes it look nice when jumping through history quickly (eg. triple click back button)
+      var pts = currentAnimation
+        ? currentAnimation.currentX(node)
+        : node
       node.data.prev = {
-        x0: node.x0,
-        x1: node.x1,
+        x0: pts.x0,
+        x1: pts.x1,
       }
     })
   }
@@ -816,6 +818,40 @@ function maxDepth (tree) {
     return 1
   }
   return tree.children.map(maxDepth).reduce((prev, next) => Math.max(prev, next), 0) + 1
+}
+
+function createAnimation (opts, render, done) {
+  var start = Date.now()
+  var animationFrame = null
+  var dt = 0
+  var ease = 0
+
+  function nextFrame () {
+    dt = (Date.now() - start) / opts.duration
+    ease = opts.ease(dt > 1 ? 1 : dt)
+    render(ease)
+
+    if (ease === 1) {
+      animationFrame = null
+      done()
+    } else {
+      animationFrame = requestAnimationFrame(nextFrame)
+    }
+  }
+  animationFrame = requestAnimationFrame(nextFrame)
+
+  return {
+    cancel () {
+      cancelAnimationFrame(animationFrame)
+    },
+    currentX (node) {
+      var prev = node.data.prev
+      return {
+        x0: prev.x0 + ease * (node.x0 - prev.x0),
+        x1: prev.x1 + ease * (node.x1 - prev.x1)
+      }
+    }
+  }
 }
 
 module.exports = flameGraph
