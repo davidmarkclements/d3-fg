@@ -416,10 +416,9 @@ function flameGraph (opts) {
     var x = scaleToWidth(node.x0)
 
     if (ease !== 1 && node.data.prev) {
-      var pw = frameWidth(node.data.prev)
-      var px = scaleToWidth(node.data.prev.x0)
-      width = pw + ease * (width - pw)
-      x = px + ease * (x - px)
+      var prev = node.data.prev
+      width = interpolate(frameWidth(prev), width, ease)
+      x = interpolate(scaleToWidth(prev.x0), x, ease)
     }
 
     if (width < 1) return
@@ -848,11 +847,15 @@ function createAnimation (opts, render, done) {
     currentX (node) {
       var prev = node.data.prev
       return {
-        x0: prev.x0 + ease * (node.x0 - prev.x0),
-        x1: prev.x1 + ease * (node.x1 - prev.x1)
+        x0: interpolate(prev.x0, node.x0, ease),
+        x1: interpolate(prev.x1, node.x1, ease)
       }
     }
   }
+}
+
+function interpolate (start, end, ease) {
+  return start + ease * (end - start)
 }
 
 module.exports = flameGraph
