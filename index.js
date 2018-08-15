@@ -412,7 +412,6 @@ function flameGraph (opts) {
 
     var depth = frameDepth(node)
     var width = frameWidth(node)
-    if (width < 1) return
 
     var x = scaleToWidth(node.x0)
 
@@ -422,6 +421,8 @@ function flameGraph (opts) {
       width = pw + ease * (width - pw)
       x = px + ease * (x - px)
     }
+
+    if (width < 1) return
 
     var strokeColor = node.parent ? colorHash(node.data, 1.1, allSamples, tiers) : 'rgba(0, 0, 0, 0.7)'
     var fillColor = node.parent
