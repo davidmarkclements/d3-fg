@@ -303,6 +303,10 @@ function flameGraph (opts) {
 
     var mayAnimate = opts && opts.animate
 
+    selection.select('canvas')
+      .attr('width', w)
+      .attr('height', h)
+
     selection
       .each(function (data) {
         time('filter', function () {
@@ -635,6 +639,7 @@ function flameGraph (opts) {
     if (!arguments.length) { return h }
     h = _
     onresize()
+    update()
     return chart
   }
 
@@ -642,6 +647,7 @@ function flameGraph (opts) {
     if (!arguments.length) { return w }
     w = _
     onresize()
+    update()
     return chart
   }
 
