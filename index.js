@@ -5,6 +5,7 @@ var rxEsc = require('escape-string-regexp')
 var d3 = Object.assign(
   {},
   require('d3-array'),
+  require('d3-dispatch'),
   require('d3-ease'),
   require('d3-hierarchy'),
   require('d3-scale'),
@@ -50,7 +51,8 @@ function flameGraph (opts) {
   var panZoom = d3.zoom().on('zoom', function () {
     update({ animate: false })
   })
-  var selection = null // selection
+  var dispatch = d3.dispatch('zoom')
+  var selection = null
   var transitionDuration = 500
   var transitionEase = d3.easeCubicInOut
   var sort = true
@@ -61,7 +63,7 @@ function flameGraph (opts) {
   var nodes = null
   var focusedFrame = null
   var hoverFrame = null
-  var isAnimating = false
+  var currentAnimation = null
 
   onresize()
 
@@ -228,11 +230,14 @@ function flameGraph (opts) {
   }
 
   function zoom (d) {
-    if (isAnimating) {
-      return // dont zoom during an animation for now
-      // Should be possible to do this by calling saveAnimationStartingPoints
-      // here, and doing Something Else (but not sure what the Something Else is)
+    if (currentAnimation) {
+      currentAnimation.cancel()
+      // save points before clearing the animation,
+      // so that it uses the current mid-animation coords as starting points
+      saveAnimationStartingPoints()
+      currentAnimation = null
     }
+
     time('zoom', function () {
       focusedFrame = d.data
       time('hideSiblings', function () {
@@ -248,6 +253,8 @@ function flameGraph (opts) {
         update({ animate: true })
       })
     })
+
+    dispatch.call('zoom', null, d.data)
   }
 
   function searchTree (d, term, color) {
@@ -352,21 +359,15 @@ function flameGraph (opts) {
         }
 
         function animate () {
-          isAnimating = true
-          var start = Date.now()
-          function nextFrame () {
-            var dt = (Date.now() - start) / transitionDuration
-            var ease = transitionEase(dt > 1 ? 1 : dt)
+          currentAnimation = createAnimation({
+            duration: transitionDuration,
+            ease: transitionEase
+          }, (ease) => {
             render(canvas, nodes, ease)
-
-            if (ease === 1) {
-              isAnimating = false
-              saveAnimationStartingPoints()
-            } else {
-              requestAnimationFrame(nextFrame)
-            }
-          }
-          requestAnimationFrame(nextFrame)
+          }, () => {
+            currentAnimation = null
+            saveAnimationStartingPoints()
+          })
         }
 
         function render (canvas, nodes, ease) {
@@ -398,9 +399,14 @@ function flameGraph (opts) {
 
   function saveAnimationStartingPoints () {
     nodes.forEach(function (node) {
+      // If an animation is ongoing, use the current positions as the starting position for the new animation
+      // This makes it look nice when jumping through history quickly (eg. triple click back button)
+      var pts = currentAnimation
+        ? currentAnimation.currentX(node)
+        : node
       node.data.prev = {
-        x0: node.x0,
-        x1: node.x1,
+        x0: pts.x0,
+        x1: pts.x1,
       }
     })
   }
@@ -410,16 +416,16 @@ function flameGraph (opts) {
 
     var depth = frameDepth(node)
     var width = frameWidth(node)
-    if (width < 1) return
 
     var x = scaleToWidth(node.x0)
 
     if (ease !== 1 && node.data.prev) {
-      var pw = frameWidth(node.data.prev)
-      var px = scaleToWidth(node.data.prev.x0)
-      width = pw + ease * (width - pw)
-      x = px + ease * (x - px)
+      var prev = node.data.prev
+      width = interpolate(frameWidth(prev), width, ease)
+      x = interpolate(scaleToWidth(prev.x0), x, ease)
     }
+
+    if (width < 1) return
 
     var strokeColor = node.parent ? colorHash(node.data, 1.1, allSamples, tiers) : 'rgba(0, 0, 0, 0.7)'
     var fillColor = node.parent
@@ -736,6 +742,16 @@ function flameGraph (opts) {
     } else update()
   }
 
+  chart.zoom = (data = nodes[0].data) => {
+    // nodes[0] = root node
+    // users of this method can zoom in on a data point
+    // instead of a node.
+    const node = nodes.find(n => n.data === data)
+    zoom(node || nodes[0])
+  }
+
+  chart.on = dispatch.on.bind(dispatch)
+
   exclude.forEach(chart.typeHide)
   d3.select(element).datum(d3.hierarchy(tree, function (d) { return d.c || d.children }))
   chart()
@@ -808,6 +824,44 @@ function maxDepth (tree) {
     return 1
   }
   return tree.children.map(maxDepth).reduce((prev, next) => Math.max(prev, next), 0) + 1
+}
+
+function createAnimation (opts, render, done) {
+  var start = Date.now()
+  var animationFrame = null
+  var dt = 0
+  var ease = 0
+
+  function nextFrame () {
+    dt = (Date.now() - start) / opts.duration
+    ease = opts.ease(dt > 1 ? 1 : dt)
+    render(ease)
+
+    if (ease === 1) {
+      animationFrame = null
+      done()
+    } else {
+      animationFrame = requestAnimationFrame(nextFrame)
+    }
+  }
+  animationFrame = requestAnimationFrame(nextFrame)
+
+  return {
+    cancel () {
+      cancelAnimationFrame(animationFrame)
+    },
+    currentX (node) {
+      var prev = node.data.prev
+      return {
+        x0: interpolate(prev.x0, node.x0, ease),
+        x1: interpolate(prev.x1, node.x1, ease)
+      }
+    }
+  }
+}
+
+function interpolate (start, end, ease) {
+  return start + ease * (end - start)
 }
 
 module.exports = flameGraph
