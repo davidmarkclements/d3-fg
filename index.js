@@ -337,7 +337,7 @@ function flameGraph (opts) {
             .sort(doSort)
 
           // Make "all stacks" as wide as every visible stack.
-          data.value = data.children.reduce(sumChildValues, 0)
+          data.value = data.children ? data.children.reduce(sumChildValues, 0) : 0
         })
 
         time('partition', function () {
