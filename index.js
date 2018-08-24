@@ -486,21 +486,28 @@ function flameGraph (opts) {
     var wrapper = d3.select(element)
     var canvas = wrapper.select('canvas').node()
     var transform = d3.zoomTransform(canvas)
-    var x = scaleToWidth(node.x0) + canvas.getBoundingClientRect().left
+    var x = transform.applyX(scaleToWidth(node.x0)) + canvas.getBoundingClientRect().left
     // y = the bottom of the node - the scroll from the top
     // (because the tooltip uses absolute positioning)
-    var y = h - frameDepth(node) * c - wrapper.node().scrollTop
+    var y = transform.applyY(h - frameDepth(node) * c) - wrapper.node().scrollTop
     var label = tooltipLabel(node)
 
     var tooltip = d3.select(element).select('.d3-flame-graph-tooltip')
       .style('top', y + 'px')
       .style('display', 'block')
+      // scale up the font size with the graph zoom level,
+      // but don't scale it down below 10pt because it'd be unreadable,
+      // and don't go above 25pt which should be huge enough for even the
+      // largest screens
+      .style('font-size', Math.max(10, Math.min(25, transform.k * 10)) + 'pt')
       .html(label)
 
-    if (x + 300 > window.innerWidth) {
-      // 300px is an arbitrary cut off point. if it's "too near"
-      // to the right edge, instead align with the rightmost end of
-      // the node
+    // 300px is an arbitrary cut off point. if it's "too near"
+    // to the right edge, instead align with the rightmost end of
+    // the node
+    // The 300px is scaled along with the rest of the graph to make sure that
+    // tooltips don't get super squished at higher zoom levels
+    if (x + (transform.k * 300) > window.innerWidth) {
       var right = canvas.getBoundingClientRect().left + w
       x = window.innerWidth - right + scaleToWidth(1 - node.x1)
       tooltip.style('left', 'auto').style('right', x + 'px')
