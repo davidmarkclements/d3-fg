@@ -110,9 +110,9 @@ function flameGraph (opts) {
     if (!d.parent) return ''
     var top = stackTop(d.data)
     return d.data.name + '<br />' + (top
-      ? 'Top of Stack:' + Math.round(100 * (top / allSamples) * 10) / 10 + '% ' +
+      ? 'Top of Stack: ' + Math.round(100 * (top / allSamples) * 10) / 10 + '% ' +
       '(' + top + ' of ' + allSamples + ' samples)<br />'
-      : '') + 'On Stack:' + Math.round(100 * (d.data.value / allSamples) * 10) / 10 + '% ' +
+      : '') + 'On Stack: ' + Math.round(100 * (d.data.value / allSamples) * 10) / 10 + '% ' +
      '(' + d.data.value + ' of ' + allSamples + ' samples)'
   }
 
