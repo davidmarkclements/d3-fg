@@ -65,6 +65,11 @@ function flameGraph (opts) {
   var hoverFrame = null
   var currentAnimation = null
 
+  // Use custom coloring function if one has been passed in
+  if (opts.colorHash) colorHash = (d, decimalAdjust, allSamples, tiers) => {
+    return opts.colorHash(stackTop, { d, decimalAdjust, allSamples, tiers })
+  }
+
   onresize()
 
   function onresize () {
@@ -766,6 +771,7 @@ function flameGraph (opts) {
   return chart
 }
 
+// This function can be overridden by passing a function to opts.colorHash
 function colorHash (d, perc, allSamples, tiers) {
   if (!d.name) {
     return perc ? 'rgb(127, 127, 127)' : 'rgba(0, 0, 0, 0)'
