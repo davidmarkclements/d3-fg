@@ -13,9 +13,9 @@ npm install d3-fg --save
 d3-fg is currently built against [d3](http://npm.im/d3) v5.x.
 
 ```js
-var tree = require('./data.json') // d3 json tree 
+var tree = require('./data.json') // d3 json tree
 var element = document.querySelector('chart') // <chart> element which should be in html body
-require('d3-flamegraph')({{tree, element}})
+require('d3-flamegraph')({tree, element})
 ```
 
 ## Dependencies
