@@ -40,7 +40,7 @@ function flameGraph (opts) {
   var tree = opts.tree
   var timing = opts.timing || false
   var element = opts.element
-  var c = 18 // cell height
+  var c = 35 // cell height
   var h = opts.height || (maxDepth(tree) + 2) * c // graph height
   var minHeight = opts.minHeight || 950
   h = h < minHeight ? minHeight : h
@@ -459,28 +459,28 @@ function flameGraph (opts) {
       context.fill()
     }
 
+    // Draw labels.
     if (width >= 35) {
       context.save()
       context.clip()
-      context.font = '12px Verdana'
-      context.fillStyle = '#000'
+      context.font = '16px Verdana'
+      context.fillStyle = '#fff'
 
+      var labelOffset = 4 // padding
       // Center the "all stacks" text
       if (!node.parent) {
         context.textAlign = 'center'
-        x += width / 2
-      } else {
-        x += 4 // add padding to other nodes
+        labelOffset = width / 2
       }
 
       var label = labelName(node)
-      context.fillText(label, x, h - (depth * c) - 1)
+      context.fillText(label, x + labelOffset, h - (depth * c) - 1)
 
       var stack = labelStack(node)
       if (stack) {
-        var offs = context.measureText(label + ' ').width
-        context.font = '10px Verdana'
-        context.fillText(stack, x + offs, h - (depth * c) - 2)
+        var nameWidth = context.measureText(label + ' ').width
+        context.font = '12px Verdana'
+        context.fillText(stack, x + labelOffset + nameWidth, h - (depth * c) - 2)
       }
 
       context.restore()
