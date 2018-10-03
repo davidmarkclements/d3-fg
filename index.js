@@ -36,7 +36,7 @@ var STATE_IDLE = 0
 var STATE_HOVER = 1
 var STATE_UNHOVER = 2
 
-const HEAT_HEIGHT = 10
+const HEAT_HEIGHT = 5
 const FONT_FAMILY = 'Verdana, sans-serif'
 
 function flameGraph (opts) {
