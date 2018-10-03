@@ -488,14 +488,14 @@ function flameGraph (opts) {
       // Don't redraw heat, it will overlap child nodes
       return
     }
+    if (!node.parent) {
+      // Root "all stacks" node doesn't have a heat
+      return
+    }
 
     // Draw heat.
-    var strokeColor = node.parent
-      ? colorHash(node.data, 1.1, allSamples, tiers)
-      : 'rgba(0, 0, 0, 0.7)'
-    var heatColor = node.parent
-      ? colorHash(node.data, undefined, allSamples, tiers)
-      : '#000'
+    var strokeColor = colorHash(node.data, 1.1, allSamples, tiers)
+    var heatColor = colorHash(node.data, undefined, allSamples, tiers)
 
     context.fillStyle = heatColor
     context.strokeStyle = strokeColor
