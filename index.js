@@ -444,14 +444,6 @@ function flameGraph (opts) {
       context.clearRect(x, y, width, c)
     }
 
-    // Draw boxes.
-    renderStackFrameBox(context, node, x, y, width, state)
-
-    // Draw labels.
-    if (width >= 35) {
-      renderLabel(context, node, x, y, width)
-    }
-
     // Draw heat.
     if (heatBars && node.parent != null &&
         // These states mean we're redrawing on top of an existing rendered graph,
@@ -459,6 +451,14 @@ function flameGraph (opts) {
         // still be visible from before
         (state !== STATE_HOVER && state !== STATE_UNHOVER)) {
       renderHeatBar(context, node, x, y, width)
+    }
+
+    // Draw boxes.
+    renderStackFrameBox(context, node, x, y, width, state)
+
+    // Draw labels.
+    if (width >= 35) {
+      renderLabel(context, node, x, y, width)
     }
   }
 
