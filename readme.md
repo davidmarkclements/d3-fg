@@ -46,6 +46,10 @@ require('d3-flamegraph')({
     stackTop(d)      // Returns number representing time in this frame not in any non-hidden child frames
     return           // String, expects valid rgb, rgba or hash string
   },
+  frameColors: { // Object, colours for the stack frame boxes
+    fill: '#000', // String, background colour.
+    stroke: '#363b4c', // String, border colour.
+  },
   labelColors: { // Object, colours for the text labels on stack frames
     default: '#fff', // String, the default colour (required).
     [categoryName]: 'color', // Optionally, colours for different categories such as "app", "cpp".

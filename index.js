@@ -49,6 +49,7 @@ function flameGraph (opts) {
   h += opts.topOffset || 0
   var w = opts.width || document.body.clientWidth * 0.89 // graph width
   var labelColors = opts.labelColors || { default: '#fff' }
+  var frameColors = opts.frameColors || { fill: '#000', stroke: '#363b4c' }
   var scaleToWidth = null
   var scaleToGraph = null
   var panZoom = d3.zoom().on('zoom', function () {
@@ -442,8 +443,8 @@ function flameGraph (opts) {
     // Draw boxes.
     context.fillStyle = node.data.highlight
         ? (typeof node.data.highlight === 'string' ? node.data.highlight : '#e600e6')
-        : '#000'
-    context.strokeStyle = '#363b4c'
+        : frameColors.fill
+    context.strokeStyle = frameColors.stroke
     context.beginPath()
     context.rect(x, h - (depth * c) - c, width, c)
     if (state === STATE_HOVER) {
