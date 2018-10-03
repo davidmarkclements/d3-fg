@@ -37,6 +37,7 @@ var STATE_HOVER = 1
 var STATE_UNHOVER = 2
 
 const HEAT_HEIGHT = 10
+const FONT_FAMILY = 'Verdana, sans-serif'
 
 function flameGraph (opts) {
   var tree = opts.tree
@@ -382,7 +383,6 @@ function flameGraph (opts) {
         function render (canvas, nodes, ease) {
           if (ease == null) ease = 1
           var context = canvas.getContext('2d')
-          context.font = '12px Verdana, sans-serif'
           context.textBaseline = 'bottom'
 
           context.clearRect(0, 0, canvas.width, canvas.height)
@@ -461,7 +461,7 @@ function flameGraph (opts) {
     if (width >= 35) {
       context.save()
       context.clip()
-      context.font = '16px Verdana'
+      context.font = `16px ${FONT_FAMILY}`
       context.fillStyle = labelColors[node.data.type] || labelColors.default
 
       var labelOffset = 4 // padding
@@ -477,7 +477,7 @@ function flameGraph (opts) {
       var stack = labelStack(node)
       if (stack) {
         var nameWidth = context.measureText(label + ' ').width
-        context.font = '12px Verdana'
+        context.font = `12px ${FONT_FAMILY}`
         context.fillText(stack, x + labelOffset + nameWidth, h - (depth * c) - 2)
       }
 
