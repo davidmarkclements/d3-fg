@@ -427,8 +427,11 @@ function flameGraph (opts) {
     var depth = frameDepth(node)
     var width = frameWidth(node)
 
+    // Coordinate of top left corner of this frame's rectangle.
     var x = scaleToWidth(node.x0)
+    var y = h - (depth * c) - c
 
+    // Scale width while animating
     if (ease !== 1 && node.data.prev) {
       var prev = node.data.prev
       width = interpolate(frameWidth(prev), width, ease)
@@ -438,10 +441,28 @@ function flameGraph (opts) {
     if (width < 1) return
 
     if (state === STATE_HOVER || state === STATE_UNHOVER) {
-      context.clearRect(x, h - (depth * c) - c, width, c)
+      context.clearRect(x, y, width, c)
     }
 
     // Draw boxes.
+    renderStackFrameBox(context, node, x, y, width)
+
+    // Draw labels.
+    if (width >= 35) {
+      renderLabel(context, node, x, y, width)
+    }
+
+    // Draw heat.
+    if (heatBars && node.parent != null &&
+        // These states mean we're redrawing on top of an existing rendered graph,
+        // so we shouldn't exceed the current rectangle's boundaries; the heat will
+        // still be visible from before
+        (state !== STATE_HOVER && state === STATE_UNHOVER)) {
+      renderHeatBar(context, node, x, y, width)
+    }
+  }
+
+  function renderStackFrameBox (context, node, x, y, width) {
     var fillColor = heatBars || !node.parent
       ? frameColors.fill
       : colorHash(node.data, undefined, allSamples, tiers)
@@ -453,7 +474,7 @@ function flameGraph (opts) {
         : fillColor
     context.strokeStyle = strokeColor
     context.beginPath()
-    context.rect(x, h - (depth * c) - c, width, c)
+    context.rect(x, y, width, c)
     if (state === STATE_HOVER) {
       context.save()
       context.globalAlpha = 0.8
@@ -463,58 +484,45 @@ function flameGraph (opts) {
       context.fill()
     }
     context.stroke()
+  }
 
-    // Draw labels.
-    if (width >= 35) {
-      context.save()
-      context.clip()
-      context.font = c > 20 ? `16px ${FONT_FAMILY}` : `12px ${FONT_FAMILY}`
-      context.fillStyle = labelColors[node.data.type] || labelColors.default
+  function renderLabel (context, node, x, y, width) {
+    context.save()
+    context.clip()
+    context.font = c > 20 ? `16px ${FONT_FAMILY}` : `12px ${FONT_FAMILY}`
+    context.fillStyle = labelColors[node.data.type] || labelColors.default
 
-      var labelOffset = 4 // padding
-      // Center the "all stacks" text
-      if (!node.parent) {
-        context.textAlign = 'center'
-        labelOffset = width / 2
-      }
-
-      // Magic value to sorta kinda align the label in the middle of the frame height
-      // It's not very accurate
-      var btmOffset = Math.floor((c - 16) / 2)
-      var label = labelName(node)
-      context.fillText(label, x + labelOffset, h - (depth * c) - btmOffset)
-
-      var stack = labelStack(node)
-      if (stack) {
-        var nameWidth = context.measureText(label + ' ').width
-        context.font = c > 20 ? `12px ${FONT_FAMILY}` : `10px ${FONT_FAMILY}`
-        context.fillText(stack, x + labelOffset + nameWidth, h - (depth * c) - btmOffset)
-      }
-
-      context.restore()
-    }
-
-    if (!heatBars) {
-      // Heat was drawn into the frame, no need to do it here
-      return
-    }
-    if (state === STATE_HOVER || state === STATE_UNHOVER) {
-      // Don't redraw heat, it will overlap child nodes
-      return
-    }
+    var labelOffset = 4 // padding
+    // Center the "all stacks" text
     if (!node.parent) {
-      // Root "all stacks" node doesn't have a heat
-      return
+      context.textAlign = 'center'
+      labelOffset = width / 2
     }
 
-    // Draw heat.
-    var heatStrokeColor = colorHash(node.data, 1.1, allSamples, tiers)
+    // Magic value to sorta kinda align the label in the middle of the frame height
+    // It's not very accurate
+    var btmOffset = Math.floor((c - 16) / 2)
+    var label = labelName(node)
+    context.fillText(label, x + labelOffset, y + c - btmOffset)
+
+    var stack = labelStack(node)
+    if (stack) {
+      var nameWidth = context.measureText(label + ' ').width
+      context.font = c > 20 ? `12px ${FONT_FAMILY}` : `10px ${FONT_FAMILY}`
+      context.fillText(stack, x + labelOffset + nameWidth, y + c - btmOffset)
+    }
+
+    context.restore()
+  }
+
+  function renderHeatBar (context, node, x, y, width) {
     var heatColor = colorHash(node.data, undefined, allSamples, tiers)
+    var heatStrokeColor = colorHash(node.data, 1.1, allSamples, tiers)
 
     context.fillStyle = heatColor
     context.strokeStyle = heatStrokeColor
     context.beginPath()
-    context.rect(x, h - (depth * c) - c - HEAT_HEIGHT, width, HEAT_HEIGHT)
+    context.rect(x, y - HEAT_HEIGHT, width, HEAT_HEIGHT)
     context.fill()
     context.stroke()
   }
