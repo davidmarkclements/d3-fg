@@ -473,6 +473,7 @@ function flameGraph (opts) {
         ? (typeof node.data.highlight === 'string' ? node.data.highlight : '#e600e6')
         : fillColor
     context.strokeStyle = strokeColor
+
     context.beginPath()
     context.rect(x, y, width, c)
     if (state === STATE_HOVER) {
@@ -488,6 +489,8 @@ function flameGraph (opts) {
 
   function renderLabel (context, node, x, y, width) {
     context.save()
+    context.beginPath()
+    context.rect(x, y, width, c)
     context.clip()
     context.font = c > 20 ? `16px ${FONT_FAMILY}` : `12px ${FONT_FAMILY}`
     context.fillStyle = labelColors[node.data.type] || labelColors.default
