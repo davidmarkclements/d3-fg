@@ -471,14 +471,17 @@ function flameGraph (opts) {
         labelOffset = width / 2
       }
 
+      // Magic value to sorta kinda align the label in the middle of the frame height
+      // It's not very accurate
+      var btmOffset = Math.floor((c - 16) / 2)
       var label = labelName(node)
-      context.fillText(label, x + labelOffset, h - (depth * c) - 1)
+      context.fillText(label, x + labelOffset, h - (depth * c) - btmOffset + 2)
 
       var stack = labelStack(node)
       if (stack) {
         var nameWidth = context.measureText(label + ' ').width
         context.font = `12px ${FONT_FAMILY}`
-        context.fillText(stack, x + labelOffset + nameWidth, h - (depth * c) - 2)
+        context.fillText(stack, x + labelOffset + nameWidth, h - (depth * c) - btmOffset)
       }
 
       context.restore()
