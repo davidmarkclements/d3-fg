@@ -36,6 +36,8 @@ var STATE_IDLE = 0
 var STATE_HOVER = 1
 var STATE_UNHOVER = 2
 
+const HEAT_HEIGHT = 10
+
 function flameGraph (opts) {
   var tree = opts.tree
   var timing = opts.timing || false
@@ -432,24 +434,17 @@ function flameGraph (opts) {
 
     if (width < 1) return
 
-    var strokeColor = node.parent ? colorHash(node.data, 1.1, allSamples, tiers) : 'rgba(0, 0, 0, 0.7)'
-    var fillColor = node.parent
-      ? (node.data.highlight
-        ? (typeof node.data.highlight === 'string' ? node.data.highlight : '#e600e6')
-        : colorHash(node.data, undefined, allSamples, tiers))
-      : '#fff'
-
     if (state === STATE_HOVER || state === STATE_UNHOVER) {
       context.clearRect(x, h - (depth * c) - c, width, c)
     }
 
-    context.fillStyle = fillColor
-    context.strokeStyle = strokeColor
-
+    // Draw boxes.
+    context.fillStyle = node.data.highlight
+        ? (typeof node.data.highlight === 'string' ? node.data.highlight : '#e600e6')
+        : '#000'
+    context.strokeStyle = '#363b4c'
     context.beginPath()
     context.rect(x, h - (depth * c) - c, width, c)
-    context.stroke()
-
     if (state === STATE_HOVER) {
       context.save()
       context.globalAlpha = 0.8
@@ -458,6 +453,7 @@ function flameGraph (opts) {
     } else {
       context.fill()
     }
+    context.stroke()
 
     // Draw labels.
     if (width >= 35) {
@@ -485,6 +481,26 @@ function flameGraph (opts) {
 
       context.restore()
     }
+
+    if (state === STATE_HOVER || state === STATE_UNHOVER) {
+      // Don't redraw heat, it will overlap child nodes
+      return
+    }
+
+    // Draw heat.
+    var strokeColor = node.parent
+      ? colorHash(node.data, 1.1, allSamples, tiers)
+      : 'rgba(0, 0, 0, 0.7)'
+    var heatColor = node.parent
+      ? colorHash(node.data, undefined, allSamples, tiers)
+      : '#000'
+
+    context.fillStyle = heatColor
+    context.strokeStyle = strokeColor
+    context.beginPath()
+    context.rect(x, h - (depth * c) - c - HEAT_HEIGHT, width, HEAT_HEIGHT)
+    context.fill()
+    context.beginPath()
   }
 
   function renderTooltip (node) {
