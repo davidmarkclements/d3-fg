@@ -39,20 +39,20 @@ require('d3-flamegraph')({
   colorHash: function (stackTop, options) { // Function sets each frame's RGB value. Default used if unset
     const {
       d,             // Object, d3 datum: one frame, one item in the tree
-      decimalAdjust, // Number, optional multiplier adjusting colour intensity up or down e.g. for borders
+      decimalAdjust, // Number, optional multiplier adjusting color intensity up or down e.g. for borders
       allSamples,    // Number, total summed time value (i.e. time represented by flamegraph width)
       tiers          // Boolean, true if base color varies by frame type e.g. app vs core
     } = options
     stackTop(d)      // Returns number representing time in this frame not in any non-hidden child frames
     return           // String, expects valid rgb, rgba or hash string
   },
-  frameColors: { // Object, colours for the stack frame boxes
-    fill: '#000', // String, background colour.
-    stroke: '#363b4c', // String, border colour.
+  frameColors: { // Object, colors for the stack frame boxes
+    fill: '#000', // String, background color.
+    stroke: '#363b4c', // String, border color.
   },
-  labelColors: { // Object, colours for the text labels on stack frames
-    default: '#fff', // String, the default colour (required).
-    [categoryName]: 'color', // Optionally, colours for different categories such as "app", "cpp".
+  labelColors: { // Object, colors for the text labels on stack frames
+    default: '#fff', // String, the default color (required).
+    [categoryName]: 'color', // Optionally, colors for different categories such as "app", "cpp".
                              // If one of these is not set for a category, labelColors.default is used
   }
 })
