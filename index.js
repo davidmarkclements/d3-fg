@@ -48,6 +48,7 @@ function flameGraph (opts) {
   h = h < minHeight ? minHeight : h
   h += opts.topOffset || 0
   var w = opts.width || document.body.clientWidth * 0.89 // graph width
+  var labelColors = opts.labelColors || { default: '#fff' }
   var scaleToWidth = null
   var scaleToGraph = null
   var panZoom = d3.zoom().on('zoom', function () {
@@ -460,7 +461,7 @@ function flameGraph (opts) {
       context.save()
       context.clip()
       context.font = '16px Verdana'
-      context.fillStyle = '#fff'
+      context.fillStyle = labelColors[node.data.type] || labelColors.default
 
       var labelOffset = 4 // padding
       // Center the "all stacks" text
