@@ -43,14 +43,15 @@ function flameGraph (opts) {
   var tree = opts.tree
   var timing = opts.timing || false
   var element = opts.element
-  var c = 35 // cell height
+  var c = opts.cellHeight || 18 // cell height
   var h = opts.height || (maxDepth(tree) + 2) * c // graph height
   var minHeight = opts.minHeight || 950
   h = h < minHeight ? minHeight : h
   h += opts.topOffset || 0
   var w = opts.width || document.body.clientWidth * 0.89 // graph width
-  var labelColors = opts.labelColors || { default: '#fff' }
-  var frameColors = opts.frameColors || { fill: '#000', stroke: '#363b4c' }
+  var heatBars = opts.heatBars || false
+  var labelColors = opts.labelColors || { default: '#000' }
+  var frameColors = opts.frameColors || { fill: '#fff', stroke: 'rgba(0, 0, 0, 0.7)' }
   var scaleToWidth = null
   var scaleToGraph = null
   var panZoom = d3.zoom().on('zoom', function () {
@@ -441,10 +442,16 @@ function flameGraph (opts) {
     }
 
     // Draw boxes.
+    var fillColor = heatBars || !node.parent
+      ? frameColors.fill
+      : colorHash(node.data, undefined, allSamples, tiers)
+    var strokeColor = heatBars || !node.parent
+      ? frameColors.stroke
+      : colorHash(node.data, 1.1, allSamples, tiers)
     context.fillStyle = node.data.highlight
         ? (typeof node.data.highlight === 'string' ? node.data.highlight : '#e600e6')
-        : frameColors.fill
-    context.strokeStyle = frameColors.stroke
+        : fillColor
+    context.strokeStyle = strokeColor
     context.beginPath()
     context.rect(x, h - (depth * c) - c, width, c)
     if (state === STATE_HOVER) {
@@ -461,7 +468,7 @@ function flameGraph (opts) {
     if (width >= 35) {
       context.save()
       context.clip()
-      context.font = `16px ${FONT_FAMILY}`
+      context.font = c > 20 ? `16px ${FONT_FAMILY}` : `12px ${FONT_FAMILY}`
       context.fillStyle = labelColors[node.data.type] || labelColors.default
 
       var labelOffset = 4 // padding
@@ -475,18 +482,22 @@ function flameGraph (opts) {
       // It's not very accurate
       var btmOffset = Math.floor((c - 16) / 2)
       var label = labelName(node)
-      context.fillText(label, x + labelOffset, h - (depth * c) - btmOffset + 2)
+      context.fillText(label, x + labelOffset, h - (depth * c) - btmOffset)
 
       var stack = labelStack(node)
       if (stack) {
         var nameWidth = context.measureText(label + ' ').width
-        context.font = `12px ${FONT_FAMILY}`
+        context.font = c > 20 ? `12px ${FONT_FAMILY}` : `10px ${FONT_FAMILY}`
         context.fillText(stack, x + labelOffset + nameWidth, h - (depth * c) - btmOffset)
       }
 
       context.restore()
     }
 
+    if (!heatBars) {
+      // Heat was drawn into the frame, no need to do it here
+      return
+    }
     if (state === STATE_HOVER || state === STATE_UNHOVER) {
       // Don't redraw heat, it will overlap child nodes
       return
@@ -497,15 +508,15 @@ function flameGraph (opts) {
     }
 
     // Draw heat.
-    var strokeColor = colorHash(node.data, 1.1, allSamples, tiers)
+    var heatStrokeColor = colorHash(node.data, 1.1, allSamples, tiers)
     var heatColor = colorHash(node.data, undefined, allSamples, tiers)
 
     context.fillStyle = heatColor
-    context.strokeStyle = strokeColor
+    context.strokeStyle = heatStrokeColor
     context.beginPath()
     context.rect(x, h - (depth * c) - c - HEAT_HEIGHT, width, HEAT_HEIGHT)
     context.fill()
-    context.beginPath()
+    context.stroke()
   }
 
   function renderTooltip (node) {
