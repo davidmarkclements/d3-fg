@@ -445,7 +445,7 @@ function flameGraph (opts) {
     }
 
     // Draw boxes.
-    renderStackFrameBox(context, node, x, y, width)
+    renderStackFrameBox(context, node, x, y, width, state)
 
     // Draw labels.
     if (width >= 35) {
@@ -462,7 +462,7 @@ function flameGraph (opts) {
     }
   }
 
-  function renderStackFrameBox (context, node, x, y, width) {
+  function renderStackFrameBox (context, node, x, y, width, state) {
     var fillColor = heatBars || !node.parent
       ? frameColors.fill
       : colorHash(node.data, undefined, allSamples, tiers)
