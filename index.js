@@ -484,7 +484,17 @@ function flameGraph (opts) {
     } else {
       context.fill()
     }
-    context.stroke()
+
+    if (heatBars) {
+      context.beginPath()
+      context.moveTo(x, y)
+      context.lineTo(x, y + c)
+      context.moveTo(x + width, y)
+      context.lineTo(x + width, y + c)
+      context.stroke()
+    } else {
+      context.stroke()
+    }
   }
 
   function renderLabel (context, node, x, y, width) {
