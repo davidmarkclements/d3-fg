@@ -457,7 +457,7 @@ function flameGraph (opts) {
         // These states mean we're redrawing on top of an existing rendered graph,
         // so we shouldn't exceed the current rectangle's boundaries; the heat will
         // still be visible from before
-        (state !== STATE_HOVER && state === STATE_UNHOVER)) {
+        (state !== STATE_HOVER && state !== STATE_UNHOVER)) {
       renderHeatBar(context, node, x, y, width)
     }
   }
