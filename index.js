@@ -36,8 +36,6 @@ var STATE_IDLE = 0
 var STATE_HOVER = 1
 var STATE_UNHOVER = 2
 
-const HEAT_HEIGHT = 5
-
 function flameGraph (opts) {
   var tree = opts.tree
   var timing = opts.timing || false
@@ -533,11 +531,12 @@ function flameGraph (opts) {
   function renderHeatBar (context, node, x, y, width) {
     var heatColor = colorHash(node.data, undefined, allSamples, tiers)
     var heatStrokeColor = colorHash(node.data, 1.1, allSamples, tiers)
+    var heatHeight = Math.floor(c / 3)
 
     context.fillStyle = heatColor
     context.strokeStyle = heatStrokeColor
     context.beginPath()
-    context.rect(x, y - HEAT_HEIGHT, width, HEAT_HEIGHT)
+    context.rect(x, y - heatHeight, width, heatHeight)
     context.fill()
     context.stroke()
   }
