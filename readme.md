@@ -34,6 +34,10 @@ require('d3-flamegraph')({
 
   // Optional:
   timing,     // Boolean, if passed as true logs times to console
+  categorizer: function (data, index, children) { // Function that determines the category for a
+                                                  // given stack frame. e.g. "app", "core"
+    return // String, indicates the category
+  }
   height,     // Number (pixels). If not set, is calculated based on tallest stack
   width,      // Number (pixels). If not set, is calculated based on clientWidth when called
   cellHeight, // Number (pixels). Defaults to 18 pixels. Font sizes scale along with this value.
