@@ -36,6 +36,8 @@ var STATE_IDLE = 0
 var STATE_HOVER = 1
 var STATE_UNHOVER = 2
 
+var FONT_FAMILY = 'Verdana, sans-serif'
+
 function flameGraph (opts) {
   var tree = opts.tree
   var timing = opts.timing || false
@@ -67,9 +69,6 @@ function flameGraph (opts) {
   var focusedFrame = null
   var hoverFrame = null
   var currentAnimation = null
-
-  var fontFamily = getComputedStyle(element)
-    .getPropertyValue('font-family')
 
   // Use custom coloring function if one has been passed in
   if (opts.colorHash) colorHash = (d, decimalAdjust, allSamples, tiers) => {
@@ -502,7 +501,7 @@ function flameGraph (opts) {
     context.beginPath()
     context.rect(x, y, width, c)
     context.clip()
-    context.font = c > 20 ? `16px ${fontFamily}` : `12px ${fontFamily}`
+    context.font = c > 20 ? `16px ${FONT_FAMILY}` : `12px ${FONT_FAMILY}`
     context.fillStyle = labelColors[node.data.type] || labelColors.default
 
     var labelOffset = 4 // padding
@@ -521,7 +520,7 @@ function flameGraph (opts) {
     var stack = labelStack(node)
     if (stack) {
       var nameWidth = context.measureText(label + ' ').width
-      context.font = c > 20 ? `12px ${fontFamily}` : `10px ${fontFamily}`
+      context.font = c > 20 ? `12px ${FONT_FAMILY}` : `10px ${FONT_FAMILY}`
       context.fillText(stack, x + labelOffset + nameWidth, y + c - btmOffset)
     }
 
