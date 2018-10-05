@@ -497,11 +497,19 @@ function flameGraph (opts) {
   }
 
   function renderLabel (context, node, x, y, width) {
+    // baseline size of 12px—for every ~3px that cellHeight grows above its baseline of 18px,
+    // grow the font size 1px
+    // This way the font size gets relatively smaller, giving it some breathing room at larger cell heights
+    // while also being readable at small cell heights
+    // NOTE this currently does NOT deal with cell heights below 18px, but then nothing in d3-fg really does
+    var labelFontSize = Math.floor(12 + (c - 18) * 0.3)
+    var stackFontSize = Math.floor(labelFontSize * 10 / 12)
+
     context.save()
     context.beginPath()
     context.rect(x, y, width, c)
     context.clip()
-    context.font = c > 20 ? `16px ${FONT_FAMILY}` : `12px ${FONT_FAMILY}`
+    context.font = `${labelFontSize}px ${FONT_FAMILY}`
     context.fillStyle = labelColors[node.data.type] || labelColors.default
 
     var labelOffset = 4 // padding
@@ -520,7 +528,7 @@ function flameGraph (opts) {
     var stack = labelStack(node)
     if (stack) {
       var nameWidth = context.measureText(label + ' ').width
-      context.font = c > 20 ? `12px ${FONT_FAMILY}` : `10px ${FONT_FAMILY}`
+      context.font = `${stackFontSize}px ${FONT_FAMILY}`
       context.fillText(stack, x + labelOffset + nameWidth, y + c - btmOffset)
     }
 
