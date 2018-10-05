@@ -34,8 +34,8 @@ require('d3-flamegraph')({
 
   // Optional:
   timing,     // Boolean, if passed as true logs times to console
-  categorizer: function (data, index, children) { // Function that determines the category for a
-                                                  // given stack frame. e.g. "app", "core"
+  categorizer: function (data, index, children) { // Function that determines the category for a given
+                                                  // stack frame. e.g. "app", "core"
     return // String, indicates the category
   }
   height,     // Number (pixels). If not set, is calculated based on tallest stack
@@ -51,7 +51,8 @@ require('d3-flamegraph')({
     stackTop(d)      // Returns number representing time in this frame not in any non-hidden child frames
     return           // String, expects valid rgb, rgba or hash string
   },
-  heatBars, // Boolean, when false (the default), heat is visualized as the background colour of stack frames; when true, heat is visualized by a bar drawn on _top_ of stack frames
+  heatBars, // Boolean, when false (the default), heat is visualized as the background colour of stack frames;
+            // when true, heat is visualized by a bar drawn on _top_ of stack frames
   frameColors: { // Object, colors for the stack frame boxes.
                  // Used when `heatBars: true`, and for the "all stacks" row when `heatBars: false`
     fill,   // String, background color.
