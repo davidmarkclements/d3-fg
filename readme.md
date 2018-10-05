@@ -36,7 +36,9 @@ require('d3-flamegraph')({
   timing,     // Boolean, if passed as true logs times to console
   categorizer: function (data, index, children) { // Function that determines the category for a given
                                                   // stack frame. e.g. "app", "core"
-    return // String, indicates the category
+    return {
+      type // String, indicates the category
+    }
   }
   height,     // Number (pixels). If not set, is calculated based on tallest stack
   width,      // Number (pixels). If not set, is calculated based on clientWidth when called
