@@ -36,16 +36,21 @@ var STATE_IDLE = 0
 var STATE_HOVER = 1
 var STATE_UNHOVER = 2
 
+var FONT_FAMILY = 'Verdana, sans-serif'
+
 function flameGraph (opts) {
   var tree = opts.tree
   var timing = opts.timing || false
   var element = opts.element
-  var c = 18 // cell height
+  var c = opts.cellHeight || 18 // cell height
   var h = opts.height || (maxDepth(tree) + 2) * c // graph height
   var minHeight = opts.minHeight || 950
   h = h < minHeight ? minHeight : h
   h += opts.topOffset || 0
   var w = opts.width || document.body.clientWidth * 0.89 // graph width
+  var heatBars = opts.heatBars || false
+  var labelColors = opts.labelColors || { default: '#000' }
+  var frameColors = opts.frameColors || { fill: '#fff', stroke: 'rgba(0, 0, 0, 0.7)' }
   var scaleToWidth = null
   var scaleToGraph = null
   var panZoom = d3.zoom().on('zoom', function () {
@@ -378,7 +383,6 @@ function flameGraph (opts) {
         function render (canvas, nodes, ease) {
           if (ease == null) ease = 1
           var context = canvas.getContext('2d')
-          context.font = '12px Verdana, sans-serif'
           context.textBaseline = 'bottom'
 
           context.clearRect(0, 0, canvas.width, canvas.height)
@@ -422,8 +426,11 @@ function flameGraph (opts) {
     var depth = frameDepth(node)
     var width = frameWidth(node)
 
+    // Coordinate of top left corner of this frame's rectangle.
     var x = scaleToWidth(node.x0)
+    var y = h - (depth * c) - c
 
+    // Scale width while animating
     if (ease !== 1 && node.data.prev) {
       var prev = node.data.prev
       width = interpolate(frameWidth(prev), width, ease)
@@ -432,24 +439,42 @@ function flameGraph (opts) {
 
     if (width < 1) return
 
-    var strokeColor = node.parent ? colorHash(node.data, 1.1, allSamples, tiers) : 'rgba(0, 0, 0, 0.7)'
-    var fillColor = node.parent
-      ? (node.data.highlight
-        ? (typeof node.data.highlight === 'string' ? node.data.highlight : '#e600e6')
-        : colorHash(node.data, undefined, allSamples, tiers))
-      : '#fff'
-
     if (state === STATE_HOVER || state === STATE_UNHOVER) {
-      context.clearRect(x, h - (depth * c) - c, width, c)
+      context.clearRect(x, y, width, c)
     }
 
-    context.fillStyle = fillColor
+    // Draw heat.
+    if (heatBars && node.parent != null &&
+        // These states mean we're redrawing on top of an existing rendered graph,
+        // so we shouldn't exceed the current rectangle's boundaries; the heat will
+        // still be visible from before
+        (state !== STATE_HOVER && state !== STATE_UNHOVER)) {
+      renderHeatBar(context, node, x, y, width)
+    }
+
+    // Draw boxes.
+    renderStackFrameBox(context, node, x, y, width, state)
+
+    // Draw labels.
+    if (width >= 35) {
+      renderLabel(context, node, x, y, width)
+    }
+  }
+
+  function renderStackFrameBox (context, node, x, y, width, state) {
+    var fillColor = heatBars || !node.parent
+      ? frameColors.fill
+      : colorHash(node.data, undefined, allSamples, tiers)
+    var strokeColor = heatBars || !node.parent
+      ? frameColors.stroke
+      : colorHash(node.data, 1.1, allSamples, tiers)
+    context.fillStyle = node.data.highlight
+        ? (typeof node.data.highlight === 'string' ? node.data.highlight : '#e600e6')
+        : fillColor
     context.strokeStyle = strokeColor
 
     context.beginPath()
-    context.rect(x, h - (depth * c) - c, width, c)
-    context.stroke()
-
+    context.rect(x, y, width, c)
     if (state === STATE_HOVER) {
       context.save()
       context.globalAlpha = 0.8
@@ -459,32 +484,68 @@ function flameGraph (opts) {
       context.fill()
     }
 
-    if (width >= 35) {
-      context.save()
-      context.clip()
-      context.font = '12px Verdana'
-      context.fillStyle = '#000'
-
-      // Center the "all stacks" text
-      if (!node.parent) {
-        context.textAlign = 'center'
-        x += width / 2
-      } else {
-        x += 4 // add padding to other nodes
-      }
-
-      var label = labelName(node)
-      context.fillText(label, x, h - (depth * c) - 1)
-
-      var stack = labelStack(node)
-      if (stack) {
-        var offs = context.measureText(label + ' ').width
-        context.font = '10px Verdana'
-        context.fillText(stack, x + offs, h - (depth * c) - 2)
-      }
-
-      context.restore()
+    if (heatBars) {
+      context.beginPath()
+      context.moveTo(x, y)
+      context.lineTo(x, y + c)
+      context.moveTo(x + width, y)
+      context.lineTo(x + width, y + c)
+      context.stroke()
+    } else {
+      context.stroke()
     }
+  }
+
+  function renderLabel (context, node, x, y, width) {
+    // baseline size of 12px—for every ~3px that cellHeight grows above its baseline of 18px,
+    // grow the font size 1px
+    // This way the font size gets relatively smaller, giving it some breathing room at larger cell heights
+    // while also being readable at small cell heights
+    // NOTE this currently does NOT deal with cell heights below 18px, but then nothing in d3-fg really does
+    var labelFontSize = Math.floor(12 + (c - 18) * 0.3)
+    var stackFontSize = Math.floor(labelFontSize * 10 / 12)
+
+    context.save()
+    context.beginPath()
+    context.rect(x, y, width, c)
+    context.clip()
+    context.font = `${labelFontSize}px ${FONT_FAMILY}`
+    context.fillStyle = labelColors[node.data.type] || labelColors.default
+
+    var labelOffset = 4 // padding
+    // Center the "all stacks" text
+    if (!node.parent) {
+      context.textAlign = 'center'
+      labelOffset = width / 2
+    }
+
+    // Magic value to sorta kinda align the label in the middle of the frame height
+    // It's not very accurate
+    var btmOffset = Math.floor((c - 16) / 2)
+    var label = labelName(node)
+    context.fillText(label, x + labelOffset, y + c - btmOffset)
+
+    var stack = labelStack(node)
+    if (stack) {
+      var nameWidth = context.measureText(label + ' ').width
+      context.font = `${stackFontSize}px ${FONT_FAMILY}`
+      context.fillText(stack, x + labelOffset + nameWidth, y + c - btmOffset)
+    }
+
+    context.restore()
+  }
+
+  function renderHeatBar (context, node, x, y, width) {
+    var heatColor = colorHash(node.data, undefined, allSamples, tiers)
+    var heatStrokeColor = colorHash(node.data, 1.1, allSamples, tiers)
+    var heatHeight = Math.floor(c / 3)
+
+    context.fillStyle = heatColor
+    context.strokeStyle = heatStrokeColor
+    context.beginPath()
+    context.rect(x, y - heatHeight, width, heatHeight)
+    context.fill()
+    context.stroke()
   }
 
   function renderTooltip (node) {

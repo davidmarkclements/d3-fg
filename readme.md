@@ -34,17 +34,36 @@ require('d3-flamegraph')({
 
   // Optional:
   timing,     // Boolean, if passed as true logs times to console
+  categorizer: function (data, index, children) { // Function that determines the category for a given
+                                                  // stack frame. e.g. "app", "core"
+    return {
+      type // String, indicates the category
+    }
+  }
   height,     // Number (pixels). If not set, is calculated based on tallest stack
   width,      // Number (pixels). If not set, is calculated based on clientWidth when called
+  cellHeight, // Number (pixels). Defaults to 18 pixels. Font sizes scale along with this value.
   colorHash: function (stackTop, options) { // Function sets each frame's RGB value. Default used if unset
     const {
       d,             // Object, d3 datum: one frame, one item in the tree
-      decimalAdjust, // Number, optional multiplier adjusting colour intensity up or down e.g. for borders
+      decimalAdjust, // Number, optional multiplier adjusting color intensity up or down e.g. for borders
       allSamples,    // Number, total summed time value (i.e. time represented by flamegraph width)
       tiers          // Boolean, true if base color varies by frame type e.g. app vs core
     } = options
     stackTop(d)      // Returns number representing time in this frame not in any non-hidden child frames
     return           // String, expects valid rgb, rgba or hash string
+  },
+  heatBars, // Boolean, when false (the default), heat is visualized as the background colour of stack frames;
+            // when true, heat is visualized by a bar drawn on _top_ of stack frames
+  frameColors: { // Object, colors for the stack frame boxes.
+                 // Used when `heatBars: true`, and for the "all stacks" row when `heatBars: false`
+    fill,   // String, background color.
+    stroke, // String, border color.
+  },
+  labelColors: { // Object, colors for the text labels on stack frames
+    default,        // String, the default color (required).
+    [categoryName], // Optionally, colors for different categories such as "app", "cpp".
+                    // If one of these is not set for a category, labelColors.default is used
   }
 })
 ```
