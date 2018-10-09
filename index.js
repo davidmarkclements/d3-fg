@@ -56,7 +56,7 @@ function flameGraph (opts) {
   var panZoom = d3.zoom().on('zoom', function () {
     update({ animate: false })
   })
-  var dispatch = d3.dispatch('zoom')
+  var dispatch = d3.dispatch('zoom','hoverin','hoverout', 'animationEnd')
   var selection = null
   var transitionDuration = 500
   var transitionEase = d3.easeCubicInOut
@@ -69,6 +69,7 @@ function flameGraph (opts) {
   var focusedFrame = null
   var hoverFrame = null
   var currentAnimation = null
+  var noTooltip = opts.noTooltip || false
 
   // Use custom coloring function if one has been passed in
   if (opts.colorHash) colorHash = (d, decimalAdjust, allSamples, tiers) => {
@@ -377,6 +378,7 @@ function flameGraph (opts) {
           }, () => {
             currentAnimation = null
             saveAnimationStartingPoints()
+            dispatch.call('animationEnd')
           })
         }
 
@@ -548,6 +550,21 @@ function flameGraph (opts) {
     context.stroke()
   }
 
+  function getNodeRect(node){
+    var wrapper = d3.select(element)
+    var canvas = wrapper.select('canvas').node()
+    var transform = d3.zoomTransform(canvas)
+    const x0 = transform.applyX(scaleToWidth(node.x0))
+    const x1 = transform.applyX(scaleToWidth(node.x1))
+
+    return {
+      x: x0,
+      y: transform.applyY(h - frameDepth(node) * c) - wrapper.node().scrollTop,
+      w: x1 - x0,
+      h: c
+    }
+  }
+
   function renderTooltip (node) {
     var wrapper = d3.select(element)
     var canvas = wrapper.select('canvas').node()
@@ -585,7 +602,15 @@ function flameGraph (opts) {
   // Wait for 500 ms before showing the tooltip.
   var tooltipFocusNode = null
   var tooltipFocusTimeout = null
+  var hoveringIn = false
   function showTooltip (node) {
+
+    //let's dispatch the hover event with no delay
+    const pointerCoords = {x: d3.event.offsetX, y: d3.event.offsetY}
+    dispatch.call('hoverin', null, {...node, rect: getNodeRect(node), pointerCoords})
+    hoveringIn = true
+    if(noTooltip) return
+
     if (tooltipFocusNode === node) {
       return renderTooltip(node)
     }
@@ -597,6 +622,13 @@ function flameGraph (opts) {
   }
 
   function hideTooltip () {
+    if(hoveringIn){
+      dispatch.call('hoverout', null, null)
+      hoveringIn = false
+    }
+    
+    if(noTooltip) return
+
     clearTimeout(tooltipFocusTimeout)
     tooltipFocusNode = null
     tooltipFocusTimeout = setTimeout(function () {
@@ -677,18 +709,21 @@ function flameGraph (opts) {
             this.style.cursor = 'default'
             hideTooltip()
           })
-        node.append('div')
-          .style('background', '#222')
-          .style('color', '#fff')
-          .style('border-radius', '3px')
-          .style('padding', '3px')
-          .style('font-size', '10pt')
-          .style('position', 'fixed')
-          .style('display', 'none')
-          .style('z-index', 1000)
-          .classed('d3-flame-graph-tooltip', true)
-          .on('mouseover', preventHideTooltip)
-          .on('mouseout', hideTooltip)
+
+        if(noTooltip == false){
+          node.append('div')
+            .style('background', '#222')
+            .style('color', '#fff')
+            .style('border-radius', '3px')
+            .style('padding', '3px')
+            .style('font-size', '10pt')
+            .style('position', 'fixed')
+            .style('display', 'none')
+            .style('z-index', 1000)
+            .classed('d3-flame-graph-tooltip', true)
+            .on('mouseover', preventHideTooltip)
+            .on('mouseout', hideTooltip)
+        }
 
         // Adjust canvas for high DPI screens
         // - Size the image up N× using attributes
