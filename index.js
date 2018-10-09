@@ -51,7 +51,7 @@ function flameGraph (opts) {
   var panZoom = d3.zoom().on('zoom', function () {
     update({ animate: false })
   })
-  var dispatch = d3.dispatch('zoom','hoverin','hoverout')
+  var dispatch = d3.dispatch('zoom','hoverin','hoverout', 'animationEnd')
   var selection = null
   var transitionDuration = 500
   var transitionEase = d3.easeCubicInOut
@@ -373,6 +373,7 @@ function flameGraph (opts) {
           }, () => {
             currentAnimation = null
             saveAnimationStartingPoints()
+            dispatch.call('animationEnd')
           })
         }
 
@@ -540,12 +541,12 @@ function flameGraph (opts) {
   // Wait for 500 ms before showing the tooltip.
   var tooltipFocusNode = null
   var tooltipFocusTimeout = null
-  var hoverin = false
+  var hoveringIn = false
   function showTooltip (node) {
 
     //let's dispatch the hover event with no delay
     dispatch.call('hoverin', null, {...node, rect: getNodeRect(node)})
-    hoverin = true
+    hoveringIn = true
     if(noTooltip) return
 
     if (tooltipFocusNode === node) {
@@ -559,9 +560,9 @@ function flameGraph (opts) {
   }
 
   function hideTooltip () {
-    if(hoverin == true){
+    if(hoveringIn){
       dispatch.call('hoverout', null, null)
-      hoverin = false
+      hoveringIn = false
     }
     
     if(noTooltip) return
