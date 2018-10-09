@@ -606,7 +606,8 @@ function flameGraph (opts) {
   function showTooltip (node) {
 
     //let's dispatch the hover event with no delay
-    dispatch.call('hoverin', null, {...node, rect: getNodeRect(node)})
+    const pointerCoords = {x: d3.event.offsetX, y: d3.event.offsetY}
+    dispatch.call('hoverin', null, {...node, rect: getNodeRect(node), pointerCoords})
     hoveringIn = true
     if(noTooltip) return
 
