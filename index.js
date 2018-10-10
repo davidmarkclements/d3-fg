@@ -51,7 +51,7 @@ function flameGraph (opts) {
   var panZoom = d3.zoom().on('zoom', function () {
     update({ animate: false })
   })
-  var dispatch = d3.dispatch('zoom','hoverin','hoverout', 'animationEnd')
+  var dispatch = d3.dispatch('zoom', 'hoverin', 'hoverout', 'animationEnd')
   var selection = null
   var transitionDuration = 500
   var transitionEase = d3.easeCubicInOut
@@ -64,11 +64,15 @@ function flameGraph (opts) {
   var focusedFrame = null
   var hoverFrame = null
   var currentAnimation = null
-  var noTooltip = opts.noTooltip || false
+
+  // Use custom tooltip rendering function if defined
+  renderTooltip = opts.renderTooltip === undefined ? renderTooltip : node => { opts.renderTooltip && opts.renderTooltip(node) }
 
   // Use custom coloring function if one has been passed in
-  if (opts.colorHash) colorHash = (d, decimalAdjust, allSamples, tiers) => {
-    return opts.colorHash(stackTop, { d, decimalAdjust, allSamples, tiers })
+  if (opts.colorHash) {
+    colorHash = (d, decimalAdjust, allSamples, tiers) => {
+      return opts.colorHash(stackTop, { d, decimalAdjust, allSamples, tiers })
+    }
   }
 
   onresize()
@@ -413,7 +417,7 @@ function flameGraph (opts) {
         : node
       node.data.prev = {
         x0: pts.x0,
-        x1: pts.x1,
+        x1: pts.x1
       }
     })
   }
@@ -489,7 +493,7 @@ function flameGraph (opts) {
     }
   }
 
-  function getNodeRect(node){
+  function getNodeRect (node) {
     var wrapper = d3.select(element)
     var canvas = wrapper.select('canvas').node()
     var transform = d3.zoomTransform(canvas)
@@ -543,12 +547,10 @@ function flameGraph (opts) {
   var tooltipFocusTimeout = null
   var hoveringIn = false
   function showTooltip (node) {
-
-    //let's dispatch the hover event with no delay
+    // let's dispatch the hover event with no delay
     const pointerCoords = {x: d3.event.offsetX, y: d3.event.offsetY}
-    dispatch.call('hoverin', null, {...node, rect: getNodeRect(node), pointerCoords})
+    dispatch.call('hoverin', null, node.data, getNodeRect(node), pointerCoords)
     hoveringIn = true
-    if(noTooltip) return
 
     if (tooltipFocusNode === node) {
       return renderTooltip(node)
@@ -561,12 +563,10 @@ function flameGraph (opts) {
   }
 
   function hideTooltip () {
-    if(hoveringIn){
+    if (hoveringIn) {
       dispatch.call('hoverout', null, null)
       hoveringIn = false
     }
-    
-    if(noTooltip) return
 
     clearTimeout(tooltipFocusTimeout)
     tooltipFocusNode = null
@@ -649,7 +649,7 @@ function flameGraph (opts) {
             hideTooltip()
           })
 
-        if(noTooltip == false){
+        if (opts.renderTooltip !== null) {
           node.append('div')
             .style('background', '#222')
             .style('color', '#fff')
