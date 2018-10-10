@@ -563,7 +563,7 @@ function flameGraph (opts) {
 
     return {
       x: x0,
-      y: transform.applyY(h - frameDepth(node) * c) - wrapper.node().scrollTop,
+      y: transform.applyY(h - frameDepth(node) * c),
       w: x1 - x0,
       h: c
     }
