@@ -569,6 +569,21 @@ function flameGraph (opts) {
     }
   }
 
+  function getNodeRect (node) {
+    var wrapper = d3.select(element)
+    var canvas = wrapper.select('canvas').node()
+    var transform = d3.zoomTransform(canvas)
+    const x0 = transform.applyX(scaleToWidth(node.x0))
+    const x1 = transform.applyX(scaleToWidth(node.x1))
+
+    return {
+      x: x0,
+      y: transform.applyY(h - frameDepth(node) * c),
+      w: x1 - x0,
+      h: c
+    }
+  }
+
   function renderTooltip (node) {
     var wrapper = d3.select(element)
     var canvas = wrapper.select('canvas').node()
