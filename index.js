@@ -71,14 +71,12 @@ function flameGraph (opts) {
   var currentAnimation = null
 
   // Use custom tooltip rendering function if defined
-  renderTooltip = opts.renderTooltip === undefined ? renderTooltip : node => { opts.renderTooltip && opts.renderTooltip(node) }
+  if (opts.renderTooltip !== undefined) renderTooltip = node => opts.renderTooltip && opts.renderTooltip(node)
 
   // Use custom coloring function if one has been passed in
-  if (opts.colorHash) {
-    colorHash = (d, decimalAdjust, allSamples, tiers) => {
-      return opts.colorHash(stackTop, { d, decimalAdjust, allSamples, tiers })
-    }
-  }
+  if (opts.colorHash !== undefined) colorHash = (d, decimalAdjust, allSamples, tiers) => 
+    opts.colorHash ? opts.colorHash(stackTop, { d, decimalAdjust, allSamples, tiers }) : frameColors.fill
+  
 
   onresize()
 
@@ -552,21 +550,6 @@ function flameGraph (opts) {
     context.rect(x, y - heatHeight, width, heatHeight)
     context.fill()
     context.stroke()
-  }
-
-  function getNodeRect (node) {
-    var wrapper = d3.select(element)
-    var canvas = wrapper.select('canvas').node()
-    var transform = d3.zoomTransform(canvas)
-    const x0 = transform.applyX(scaleToWidth(node.x0))
-    const x1 = transform.applyX(scaleToWidth(node.x1))
-
-    return {
-      x: x0,
-      y: transform.applyY(h - frameDepth(node) * c),
-      w: x1 - x0,
-      h: c
-    }
   }
 
   function getNodeRect (node) {
