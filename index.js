@@ -71,10 +71,10 @@ function flameGraph (opts) {
   var currentAnimation = null
 
   // Use custom coloring function if one has been passed in
-  var colorHash = (opts.colorHash !== undefined) ? defaultColorHash : (d, decimalAdjust, allSamples, tiers) => opts.colorHash ? opts.colorHash(stackTop, { d, decimalAdjust, allSamples, tiers }) : frameColors.fill
+  var colorHash = (opts.colorHash === undefined) ? defaultColorHash : (d, decimalAdjust, allSamples, tiers) => opts.colorHash ? opts.colorHash(stackTop, { d, decimalAdjust, allSamples, tiers }) : frameColors.fill
 
   // Use custom tooltip rendering function if defined
-  var renderTooltip = (opts.renderTooltip !== undefined) ? defaultRenderTooltip : node => opts.renderTooltip && opts.renderTooltip(node)
+  var renderTooltip = (opts.renderTooltip === undefined) ? defaultRenderTooltip : node => opts.renderTooltip && opts.renderTooltip(node)
 
   onresize()
 
