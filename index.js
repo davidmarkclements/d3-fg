@@ -117,7 +117,6 @@ function flameGraph (opts) {
     return onStack + topOfStack
   }
 
-  // this function seems to be unused... shall we remove it?
   function tooltipLabel (d) {
     if (!d.parent) return ''
     var top = stackTop(d.data)
