@@ -18,19 +18,19 @@ Object.defineProperty(d3, 'event', {
 
 var diffScale = d3.scaleLinear().range([0, 0.2])
 var colors = {
-  v8: {h: 67, s: 81, l: 65},
-  inlinable: {h: 300, s: 100, l: 50},
-  regexp: {h: 27, s: 100, l: 50},
-  cpp: {h: 0, s: 50, l: 50},
-  native: {h: 122, s: 50, l: 45},
-  core: {h: 0, s: 0, l: 80},
-  deps: {h: 244, s: 50, l: 65},
-  app: {h: 200, s: 50, l: 45},
-  init: {h: 21, s: 81, l: 73}
+  v8: { h: 67, s: 81, l: 65 },
+  inlinable: { h: 300, s: 100, l: 50 },
+  regexp: { h: 27, s: 100, l: 50 },
+  cpp: { h: 0, s: 50, l: 50 },
+  native: { h: 122, s: 50, l: 45 },
+  core: { h: 0, s: 0, l: 80 },
+  deps: { h: 244, s: 50, l: 65 },
+  app: { h: 200, s: 50, l: 45 },
+  init: { h: 21, s: 81, l: 73 }
 }
-colors.def = {h: 10, s: 66, l: 80}
-colors.js = {h: 10, s: 66, l: 80}
-colors.c = {h: 10, s: 66, l: 80}
+colors.def = { h: 10, s: 66, l: 80 }
+colors.js = { h: 10, s: 66, l: 80 }
+colors.c = { h: 10, s: 66, l: 80 }
 
 var STATE_IDLE = 0
 var STATE_HOVER = 1
@@ -69,14 +69,12 @@ function flameGraph (opts) {
   var focusedFrame = null
   var hoverFrame = null
   var currentAnimation = null
-  var coloringFunction = colorHash
 
   // Use custom coloring function if one has been passed in
-  if (opts.colorHash !== undefined) coloringFunction = (d, decimalAdjust, allSamples, tiers) => 
-    opts.colorHash ? opts.colorHash(stackTop, { d, decimalAdjust, allSamples, tiers }) : frameColors.fill
+  var colorHash = (opts.colorHash !== undefined) ? defaultColorHash : (d, decimalAdjust, allSamples, tiers) => opts.colorHash ? opts.colorHash(stackTop, { d, decimalAdjust, allSamples, tiers }) : frameColors.fill
 
   // Use custom tooltip rendering function if defined
-  if (opts.renderTooltip !== undefined) renderTooltip = node => opts.renderTooltip && opts.renderTooltip(node)
+  var renderTooltip = (opts.renderTooltip !== undefined) ? defaultRenderTooltip : node => opts.renderTooltip && opts.renderTooltip(node)
 
   onresize()
 
@@ -119,6 +117,7 @@ function flameGraph (opts) {
     return onStack + topOfStack
   }
 
+  // this function seems to be unused... shall we remove it?
   function tooltipLabel (d) {
     if (!d.parent) return ''
     var top = stackTop(d.data)
@@ -136,23 +135,23 @@ function flameGraph (opts) {
     if (!/.js/.test(name)) {
       switch (true) {
         case /^Builtin:|^Stub:|v8::|^(.+)IC:|^.*Handler:/
-          .test(name): return {type: 'v8'}
+          .test(name): return { type: 'v8' }
         case /^RegExp:/
-          .test(name): return {type: 'regexp'}
+          .test(name): return { type: 'regexp' }
         case /apply$|call$|Arguments$/
-          .test(name): return {type: 'native'}
-        case /\.$/.test(name): return {type: 'core'}
-        default: return {type: 'cpp'}
+          .test(name): return { type: 'native' }
+        case /\.$/.test(name): return { type: 'core' }
+        default: return { type: 'cpp' }
       }
     }
 
-    if (/\[INIT\]/.test(name)) return {type: 'init'}
+    if (/\[INIT\]/.test(name)) return { type: 'init' }
 
     switch (true) {
-      case / native /.test(name): return {type: 'native'}
-      case (name.indexOf('/') === -1 || /internal\//.test(name) && !/ \//.test(name)): return {type: 'core'}
-      case !/node_modules/.test(name): return {type: 'app'}
-      default: return {type: 'deps'}
+      case / native /.test(name): return { type: 'native' }
+      case (name.indexOf('/') === -1 || /internal\//.test(name) && !/ \//.test(name)): return { type: 'core' }
+      case !/node_modules/.test(name): return { type: 'app' }
+      default: return { type: 'deps' }
     }
   }
 
@@ -468,13 +467,13 @@ function flameGraph (opts) {
   function renderStackFrameBox (context, node, x, y, width, state) {
     var fillColor = heatBars || !node.parent
       ? frameColors.fill
-      : coloringFunction(node.data, undefined, allSamples, tiers)
+      : colorHash(node.data, undefined, allSamples, tiers)
     var strokeColor = heatBars || !node.parent
       ? frameColors.stroke
-      : coloringFunction(node.data, 1.1, allSamples, tiers)
+      : colorHash(node.data, 1.1, allSamples, tiers)
     context.fillStyle = node.data.highlight
-        ? (typeof node.data.highlight === 'string' ? node.data.highlight : '#e600e6')
-        : fillColor
+      ? (typeof node.data.highlight === 'string' ? node.data.highlight : '#e600e6')
+      : fillColor
     context.strokeStyle = strokeColor
 
     context.beginPath()
@@ -540,8 +539,8 @@ function flameGraph (opts) {
   }
 
   function renderHeatBar (context, node, x, y, width) {
-    var heatColor = coloringFunction(node.data, undefined, allSamples, tiers)
-    var heatStrokeColor = coloringFunction(node.data, 1.1, allSamples, tiers)
+    var heatColor = colorHash(node.data, undefined, allSamples, tiers)
+    var heatStrokeColor = colorHash(node.data, 1.1, allSamples, tiers)
     var heatHeight = Math.floor(c / 3)
 
     context.fillStyle = heatColor
@@ -567,7 +566,7 @@ function flameGraph (opts) {
     }
   }
 
-  function renderTooltip (node) {
+  function defaultRenderTooltip (node) {
     var wrapper = d3.select(element)
     var canvas = wrapper.select('canvas').node()
     var transform = d3.zoomTransform(canvas)
@@ -607,7 +606,7 @@ function flameGraph (opts) {
   var hoveringIn = false
   function showTooltip (node) {
     // let's dispatch the hover event with no delay
-    const pointerCoords = {x: d3.event.offsetX, y: d3.event.offsetY}
+    const pointerCoords = { x: d3.event.offsetX, y: d3.event.offsetY }
     dispatch.call('hoverin', null, node.data, getNodeRect(node), pointerCoords)
     hoveringIn = true
 
@@ -664,7 +663,7 @@ function flameGraph (opts) {
       allSamples = data.data.value
 
       if (!firstRender) {
-        node = d3.select(this).append('div')
+        var node = d3.select(this).append('div')
           .style('position', 'relative')
         node.append('canvas')
           .attr('width', w)
@@ -866,7 +865,7 @@ function flameGraph (opts) {
 }
 
 // This function can be overridden by passing a function to opts.colorHash
-function colorHash (d, perc, allSamples, tiers) {
+function defaultColorHash (d, perc, allSamples, tiers) {
   if (!d.name) {
     return perc ? 'rgb(127, 127, 127)' : 'rgba(0, 0, 0, 0)'
   }
@@ -948,14 +947,14 @@ function createAnimation (opts, render, done) {
       animationFrame = null
       done()
     } else {
-      animationFrame = requestAnimationFrame(nextFrame)
+      animationFrame = window.requestAnimationFrame(nextFrame)
     }
   }
-  animationFrame = requestAnimationFrame(nextFrame)
+  animationFrame = window.requestAnimationFrame(nextFrame)
 
   return {
     cancel () {
-      cancelAnimationFrame(animationFrame)
+      window.cancelAnimationFrame(animationFrame)
     },
     currentX (node) {
       var prev = node.data.prev
@@ -973,4 +972,4 @@ function interpolate (start, end, ease) {
 
 module.exports = flameGraph
 module.exports.colors = colors
-module.exports.colorHash = colorHash
+module.exports.colorHash = defaultColorHash
