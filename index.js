@@ -18,19 +18,19 @@ Object.defineProperty(d3, 'event', {
 
 var diffScale = d3.scaleLinear().range([0, 0.2])
 var colors = {
-  v8: {h: 67, s: 81, l: 65},
-  inlinable: {h: 300, s: 100, l: 50},
-  regexp: {h: 27, s: 100, l: 50},
-  cpp: {h: 0, s: 50, l: 50},
-  native: {h: 122, s: 50, l: 45},
-  core: {h: 0, s: 0, l: 80},
-  deps: {h: 244, s: 50, l: 65},
-  app: {h: 200, s: 50, l: 45},
-  init: {h: 21, s: 81, l: 73}
+  v8: { h: 67, s: 81, l: 65 },
+  inlinable: { h: 300, s: 100, l: 50 },
+  regexp: { h: 27, s: 100, l: 50 },
+  cpp: { h: 0, s: 50, l: 50 },
+  native: { h: 122, s: 50, l: 45 },
+  core: { h: 0, s: 0, l: 80 },
+  deps: { h: 244, s: 50, l: 65 },
+  app: { h: 200, s: 50, l: 45 },
+  init: { h: 21, s: 81, l: 73 }
 }
-colors.def = {h: 10, s: 66, l: 80}
-colors.js = {h: 10, s: 66, l: 80}
-colors.c = {h: 10, s: 66, l: 80}
+colors.def = { h: 10, s: 66, l: 80 }
+colors.js = { h: 10, s: 66, l: 80 }
+colors.c = { h: 10, s: 66, l: 80 }
 
 var STATE_IDLE = 0
 var STATE_HOVER = 1
@@ -56,7 +56,7 @@ function flameGraph (opts) {
   var panZoom = d3.zoom().on('zoom', function () {
     update({ animate: false })
   })
-  var dispatch = d3.dispatch('zoom')
+  var dispatch = d3.dispatch('zoom', 'hoverin', 'hoverout', 'animationEnd')
   var selection = null
   var transitionDuration = 500
   var transitionEase = d3.easeCubicInOut
@@ -71,9 +71,10 @@ function flameGraph (opts) {
   var currentAnimation = null
 
   // Use custom coloring function if one has been passed in
-  if (opts.colorHash) colorHash = (d, decimalAdjust, allSamples, tiers) => {
-    return opts.colorHash(stackTop, { d, decimalAdjust, allSamples, tiers })
-  }
+  var colorHash = (opts.colorHash === undefined) ? defaultColorHash : (d, decimalAdjust, allSamples, tiers) => opts.colorHash ? opts.colorHash(stackTop, { d, decimalAdjust, allSamples, tiers }) : frameColors.fill
+
+  // Use custom tooltip rendering function if defined
+  var renderTooltip = (opts.renderTooltip === undefined) ? defaultRenderTooltip : node => opts.renderTooltip && opts.renderTooltip(node)
 
   onresize()
 
@@ -133,23 +134,23 @@ function flameGraph (opts) {
     if (!/.js/.test(name)) {
       switch (true) {
         case /^Builtin:|^Stub:|v8::|^(.+)IC:|^.*Handler:/
-          .test(name): return {type: 'v8'}
+          .test(name): return { type: 'v8' }
         case /^RegExp:/
-          .test(name): return {type: 'regexp'}
+          .test(name): return { type: 'regexp' }
         case /apply$|call$|Arguments$/
-          .test(name): return {type: 'native'}
-        case /\.$/.test(name): return {type: 'core'}
-        default: return {type: 'cpp'}
+          .test(name): return { type: 'native' }
+        case /\.$/.test(name): return { type: 'core' }
+        default: return { type: 'cpp' }
       }
     }
 
-    if (/\[INIT\]/.test(name)) return {type: 'init'}
+    if (/\[INIT\]/.test(name)) return { type: 'init' }
 
     switch (true) {
-      case / native /.test(name): return {type: 'native'}
-      case (name.indexOf('/') === -1 || /internal\//.test(name) && !/ \//.test(name)): return {type: 'core'}
-      case !/node_modules/.test(name): return {type: 'app'}
-      default: return {type: 'deps'}
+      case / native /.test(name): return { type: 'native' }
+      case (name.indexOf('/') === -1 || /internal\//.test(name) && !/ \//.test(name)): return { type: 'core' }
+      case !/node_modules/.test(name): return { type: 'app' }
+      default: return { type: 'deps' }
     }
   }
 
@@ -377,6 +378,7 @@ function flameGraph (opts) {
           }, () => {
             currentAnimation = null
             saveAnimationStartingPoints()
+            dispatch.call('animationEnd')
           })
         }
 
@@ -415,7 +417,7 @@ function flameGraph (opts) {
         : node
       node.data.prev = {
         x0: pts.x0,
-        x1: pts.x1,
+        x1: pts.x1
       }
     })
   }
@@ -469,8 +471,8 @@ function flameGraph (opts) {
       ? frameColors.stroke
       : colorHash(node.data, 1.1, allSamples, tiers)
     context.fillStyle = node.data.highlight
-        ? (typeof node.data.highlight === 'string' ? node.data.highlight : '#e600e6')
-        : fillColor
+      ? (typeof node.data.highlight === 'string' ? node.data.highlight : '#e600e6')
+      : fillColor
     context.strokeStyle = strokeColor
 
     context.beginPath()
@@ -548,7 +550,22 @@ function flameGraph (opts) {
     context.stroke()
   }
 
-  function renderTooltip (node) {
+  function getNodeRect (node) {
+    var wrapper = d3.select(element)
+    var canvas = wrapper.select('canvas').node()
+    var transform = d3.zoomTransform(canvas)
+    const x0 = transform.applyX(scaleToWidth(node.x0))
+    const x1 = transform.applyX(scaleToWidth(node.x1))
+
+    return {
+      x: x0,
+      y: transform.applyY(h - frameDepth(node) * c),
+      w: x1 - x0,
+      h: c
+    }
+  }
+
+  function defaultRenderTooltip (node) {
     var wrapper = d3.select(element)
     var canvas = wrapper.select('canvas').node()
     var transform = d3.zoomTransform(canvas)
@@ -585,7 +602,13 @@ function flameGraph (opts) {
   // Wait for 500 ms before showing the tooltip.
   var tooltipFocusNode = null
   var tooltipFocusTimeout = null
+  var hoveringIn = false
   function showTooltip (node) {
+    // let's dispatch the hover event with no delay
+    const pointerCoords = { x: d3.event.offsetX, y: d3.event.offsetY }
+    dispatch.call('hoverin', null, node.data, getNodeRect(node), pointerCoords)
+    hoveringIn = true
+
     if (tooltipFocusNode === node) {
       return renderTooltip(node)
     }
@@ -597,6 +620,11 @@ function flameGraph (opts) {
   }
 
   function hideTooltip () {
+    if (hoveringIn) {
+      dispatch.call('hoverout', null, null)
+      hoveringIn = false
+    }
+
     clearTimeout(tooltipFocusTimeout)
     tooltipFocusNode = null
     tooltipFocusTimeout = setTimeout(function () {
@@ -634,7 +662,7 @@ function flameGraph (opts) {
       allSamples = data.data.value
 
       if (!firstRender) {
-        node = d3.select(this).append('div')
+        var node = d3.select(this).append('div')
           .style('position', 'relative')
         node.append('canvas')
           .attr('width', w)
@@ -677,18 +705,21 @@ function flameGraph (opts) {
             this.style.cursor = 'default'
             hideTooltip()
           })
-        node.append('div')
-          .style('background', '#222')
-          .style('color', '#fff')
-          .style('border-radius', '3px')
-          .style('padding', '3px')
-          .style('font-size', '10pt')
-          .style('position', 'fixed')
-          .style('display', 'none')
-          .style('z-index', 1000)
-          .classed('d3-flame-graph-tooltip', true)
-          .on('mouseover', preventHideTooltip)
-          .on('mouseout', hideTooltip)
+
+        if (opts.renderTooltip !== null) {
+          node.append('div')
+            .style('background', '#222')
+            .style('color', '#fff')
+            .style('border-radius', '3px')
+            .style('padding', '3px')
+            .style('font-size', '10pt')
+            .style('position', 'fixed')
+            .style('display', 'none')
+            .style('z-index', 1000)
+            .classed('d3-flame-graph-tooltip', true)
+            .on('mouseover', preventHideTooltip)
+            .on('mouseout', hideTooltip)
+        }
 
         // Adjust canvas for high DPI screens
         // - Size the image up N× using attributes
@@ -833,7 +864,7 @@ function flameGraph (opts) {
 }
 
 // This function can be overridden by passing a function to opts.colorHash
-function colorHash (d, perc, allSamples, tiers) {
+function defaultColorHash (d, perc, allSamples, tiers) {
   if (!d.name) {
     return perc ? 'rgb(127, 127, 127)' : 'rgba(0, 0, 0, 0)'
   }
@@ -915,14 +946,14 @@ function createAnimation (opts, render, done) {
       animationFrame = null
       done()
     } else {
-      animationFrame = requestAnimationFrame(nextFrame)
+      animationFrame = window.requestAnimationFrame(nextFrame)
     }
   }
-  animationFrame = requestAnimationFrame(nextFrame)
+  animationFrame = window.requestAnimationFrame(nextFrame)
 
   return {
     cancel () {
-      cancelAnimationFrame(animationFrame)
+      window.cancelAnimationFrame(animationFrame)
     },
     currentX (node) {
       var prev = node.data.prev
@@ -940,4 +971,4 @@ function interpolate (start, end, ease) {
 
 module.exports = flameGraph
 module.exports.colors = colors
-module.exports.colorHash = colorHash
+module.exports.colorHash = defaultColorHash
