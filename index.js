@@ -69,14 +69,14 @@ function flameGraph (opts) {
   var focusedFrame = null
   var hoverFrame = null
   var currentAnimation = null
+  var coloringFunction = colorHash
+
+  // Use custom coloring function if one has been passed in
+  if (opts.colorHash !== undefined) coloringFunction = (d, decimalAdjust, allSamples, tiers) => 
+    opts.colorHash ? opts.colorHash(stackTop, { d, decimalAdjust, allSamples, tiers }) : frameColors.fill
 
   // Use custom tooltip rendering function if defined
   if (opts.renderTooltip !== undefined) renderTooltip = node => opts.renderTooltip && opts.renderTooltip(node)
-
-  // Use custom coloring function if one has been passed in
-  if (opts.colorHash !== undefined) colorHash = (d, decimalAdjust, allSamples, tiers) => 
-    opts.colorHash ? opts.colorHash(stackTop, { d, decimalAdjust, allSamples, tiers }) : frameColors.fill
-  
 
   onresize()
 
@@ -468,10 +468,10 @@ function flameGraph (opts) {
   function renderStackFrameBox (context, node, x, y, width, state) {
     var fillColor = heatBars || !node.parent
       ? frameColors.fill
-      : colorHash(node.data, undefined, allSamples, tiers)
+      : coloringFunction(node.data, undefined, allSamples, tiers)
     var strokeColor = heatBars || !node.parent
       ? frameColors.stroke
-      : colorHash(node.data, 1.1, allSamples, tiers)
+      : coloringFunction(node.data, 1.1, allSamples, tiers)
     context.fillStyle = node.data.highlight
         ? (typeof node.data.highlight === 'string' ? node.data.highlight : '#e600e6')
         : fillColor
@@ -540,8 +540,8 @@ function flameGraph (opts) {
   }
 
   function renderHeatBar (context, node, x, y, width) {
-    var heatColor = colorHash(node.data, undefined, allSamples, tiers)
-    var heatStrokeColor = colorHash(node.data, 1.1, allSamples, tiers)
+    var heatColor = coloringFunction(node.data, undefined, allSamples, tiers)
+    var heatStrokeColor = coloringFunction(node.data, 1.1, allSamples, tiers)
     var heatHeight = Math.floor(c / 3)
 
     context.fillStyle = heatColor
