@@ -702,6 +702,7 @@ function flameGraph (opts) {
             }
           })
           .on('mouseout', function () {
+            hoverFrame = null
             this.style.cursor = 'default'
             hideTooltip()
           })
