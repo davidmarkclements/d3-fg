@@ -321,9 +321,18 @@ function flameGraph (opts) {
 
     var mayAnimate = opts && opts.animate
 
-    selection.select('canvas')
-      .attr('width', w)
-      .attr('height', h)
+    var pixelRatio = window.devicePixelRatio
+
+    if (window.devicePixelRatio > 1) {
+      var canvas = selection.select('canvas')
+        .style('width', w + 'px')
+        .style('height', h + 'px')
+        .attr('width', w * pixelRatio)
+        .attr('height', h * pixelRatio)
+
+      var context = canvas.node().getContext('2d')
+      context.scale(pixelRatio, pixelRatio)
+    }
 
     selection
       .each(function (data) {
@@ -726,12 +735,15 @@ function flameGraph (opts) {
         // - Size the image up N× using attributes
         // - Squash it down N× using CSS
         // - Scale the context so 1px in all subsequent draw operations means Npx
+
         if (window.devicePixelRatio && window.devicePixelRatio !== 1) {
           node.select('canvas')
-            .style('width', w)
-            .style('height', h)
+            .style('width', w + 'px')
+            .style('height', h + 'px')
             .attr('width', w * window.devicePixelRatio)
             .attr('height', h * window.devicePixelRatio)
+
+          console.log(window.devicePixelRatio, node.select('canvas').node(), w, h)
 
           var context = node.select('canvas').node().getContext('2d')
           context.scale(window.devicePixelRatio, window.devicePixelRatio)
