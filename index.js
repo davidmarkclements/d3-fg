@@ -856,16 +856,13 @@ function adjustForHighDpiScreen (canvas, w, h) {
   // - Scale the context so 1px in all subsequent draw operations means Npx
 
   var pixelRatio = window.devicePixelRatio
+  canvas
+    .style('width', w + 'px')
+    .style('height', h + 'px')
+    .attr('width', w * pixelRatio)
+    .attr('height', h * pixelRatio)
 
-  if (pixelRatio > 1) {
-    canvas
-      .style('width', w + 'px')
-      .style('height', h + 'px')
-      .attr('width', w * pixelRatio)
-      .attr('height', h * pixelRatio)
-
-    canvas.node().getContext('2d').scale(pixelRatio, pixelRatio)
-  }
+  canvas.node().getContext('2d').scale(pixelRatio, pixelRatio)
 }
 
 // This function can be overridden by passing a function to opts.colorHash
