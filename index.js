@@ -321,18 +321,18 @@ function flameGraph (opts) {
 
     var mayAnimate = opts && opts.animate
 
-    var pixelRatio = window.devicePixelRatio
+    // var pixelRatio = window.devicePixelRatio
 
-    if (window.devicePixelRatio > 1) {
-      var canvas = selection.select('canvas')
-        .style('width', w + 'px')
-        .style('height', h + 'px')
-        .attr('width', w * pixelRatio)
-        .attr('height', h * pixelRatio)
+    // if (pixelRatio > 1) {
+    //   var canvas = selection.select('canvas')
+    //     .style('width', w + 'px')
+    //     .style('height', h + 'px')
+    //     .attr('width', w * pixelRatio)
+    //     .attr('height', h * pixelRatio)
 
-      var context = canvas.node().getContext('2d')
-      context.scale(pixelRatio, pixelRatio)
-    }
+    //   var context = canvas.node().getContext('2d')
+    //   context.scale(pixelRatio, pixelRatio)
+    // }
 
     selection
       .each(function (data) {
@@ -731,21 +731,7 @@ function flameGraph (opts) {
             .on('mouseout', hideTooltip)
         }
 
-        // Adjust canvas for high DPI screens
-        // - Size the image up N× using attributes
-        // - Squash it down N× using CSS
-        // - Scale the context so 1px in all subsequent draw operations means Npx
-
-        if (window.devicePixelRatio && window.devicePixelRatio !== 1) {
-          node.select('canvas')
-            .style('width', w + 'px')
-            .style('height', h + 'px')
-            .attr('width', w * window.devicePixelRatio)
-            .attr('height', h * window.devicePixelRatio)
-
-          var context = node.select('canvas').node().getContext('2d')
-          context.scale(window.devicePixelRatio, window.devicePixelRatio)
-        }
+        adjustForHighDpiScreen(node.select('canvas'), w, h)
       }
 
       categorizeTree(data)
@@ -872,6 +858,25 @@ function flameGraph (opts) {
   chart()
 
   return chart
+}
+
+function adjustForHighDpiScreen (canvas, w, h) {
+  // Adjust canvas for high DPI screens
+  // - Size the image up N× using attributes
+  // - Squash it down N× using CSS
+  // - Scale the context so 1px in all subsequent draw operations means Npx
+
+  var pixelRatio = window.devicePixelRatio
+
+  if (pixelRatio > 1) {
+    canvas
+      .style('width', w + 'px')
+      .style('height', h + 'px')
+      .attr('width', w * pixelRatio)
+      .attr('height', h * pixelRatio)
+
+    canvas.node().getContext('2d').scale(pixelRatio, pixelRatio)
+  }
 }
 
 // This function can be overridden by passing a function to opts.colorHash
