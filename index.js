@@ -70,6 +70,8 @@ function flameGraph (opts) {
   var hoverFrame = null
   var currentAnimation = null
 
+  var devicePixelRatio = null
+
   // Use custom coloring function if one has been passed in
   var colorHash = (opts.colorHash === undefined) ? defaultColorHash : (d, decimalAdjust, allSamples, tiers) => opts.colorHash ? opts.colorHash(stackTop, { d, decimalAdjust, allSamples, tiers }) : frameColors.fill
 
@@ -321,9 +323,7 @@ function flameGraph (opts) {
 
     var mayAnimate = opts && opts.animate
 
-    selection.select('canvas')
-      .attr('width', w)
-      .attr('height', h)
+    adjustForHighDpiScreen(selection.select('canvas'))
 
     selection
       .each(function (data) {
@@ -655,6 +655,26 @@ function flameGraph (opts) {
     })
   }
 
+  function adjustForHighDpiScreen (canvas) {
+    // Adjust canvas for high DPI screens
+    // - Size the image up N× using attributes
+    // - Squash it down N× using CSS
+    // - Scale the context so 1px in all subsequent draw operations means Npx
+  
+    // avoiding unnecessary ops if the pixelRatio didn't change since last time
+    if (devicePixelRatio !== window.devicePixelRatio) {
+      devicePixelRatio = window.devicePixelRatio
+  
+      canvas
+        .style('width', w + 'px')
+        .style('height', h + 'px')
+        .attr('width', w * devicePixelRatio)
+        .attr('height', h * devicePixelRatio)
+  
+      canvas.node().getContext('2d').scale(devicePixelRatio, devicePixelRatio)
+    }
+  }
+
   function chart (firstRender) {
     selection = d3.select(element)
 
@@ -722,20 +742,7 @@ function flameGraph (opts) {
             .on('mouseout', hideTooltip)
         }
 
-        // Adjust canvas for high DPI screens
-        // - Size the image up N× using attributes
-        // - Squash it down N× using CSS
-        // - Scale the context so 1px in all subsequent draw operations means Npx
-        if (window.devicePixelRatio && window.devicePixelRatio !== 1) {
-          node.select('canvas')
-            .style('width', w)
-            .style('height', h)
-            .attr('width', w * window.devicePixelRatio)
-            .attr('height', h * window.devicePixelRatio)
-
-          var context = node.select('canvas').node().getContext('2d')
-          context.scale(window.devicePixelRatio, window.devicePixelRatio)
-        }
+        adjustForHighDpiScreen(node.select('canvas'))
       }
 
       categorizeTree(data)
@@ -863,6 +870,7 @@ function flameGraph (opts) {
 
   return chart
 }
+
 
 // This function can be overridden by passing a function to opts.colorHash
 function defaultColorHash (d, perc, allSamples, tiers) {
