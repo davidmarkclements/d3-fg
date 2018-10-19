@@ -38,6 +38,8 @@ var STATE_UNHOVER = 2
 
 var FONT_FAMILY = 'Verdana, sans-serif'
 
+var pixelRatio = null
+
 function flameGraph (opts) {
   var tree = opts.tree
   var timing = opts.timing || false
@@ -855,14 +857,18 @@ function adjustForHighDpiScreen (canvas, w, h) {
   // - Squash it down N× using CSS
   // - Scale the context so 1px in all subsequent draw operations means Npx
 
-  var pixelRatio = window.devicePixelRatio
-  canvas
-    .style('width', w + 'px')
-    .style('height', h + 'px')
-    .attr('width', w * pixelRatio)
-    .attr('height', h * pixelRatio)
+  // avoiding unnecessary ops if the piselRatio didn't change since last time
+  if (pixelRatio !== window.devicePixelRatio) {
+    pixelRatio = window.devicePixelRatio
 
-  canvas.node().getContext('2d').scale(pixelRatio, pixelRatio)
+    canvas
+      .style('width', w + 'px')
+      .style('height', h + 'px')
+      .attr('width', w * pixelRatio)
+      .attr('height', h * pixelRatio)
+
+    canvas.node().getContext('2d').scale(pixelRatio, pixelRatio)
+  }
 }
 
 // This function can be overridden by passing a function to opts.colorHash
