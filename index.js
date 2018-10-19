@@ -321,18 +321,7 @@ function flameGraph (opts) {
 
     var mayAnimate = opts && opts.animate
 
-    // var pixelRatio = window.devicePixelRatio
-
-    // if (pixelRatio > 1) {
-    //   var canvas = selection.select('canvas')
-    //     .style('width', w + 'px')
-    //     .style('height', h + 'px')
-    //     .attr('width', w * pixelRatio)
-    //     .attr('height', h * pixelRatio)
-
-    //   var context = canvas.node().getContext('2d')
-    //   context.scale(pixelRatio, pixelRatio)
-    // }
+    adjustForHighDpiScreen(selection.select('canvas'), w, h)
 
     selection
       .each(function (data) {
