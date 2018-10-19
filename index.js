@@ -38,8 +38,6 @@ var STATE_UNHOVER = 2
 
 var FONT_FAMILY = 'Verdana, sans-serif'
 
-var pixelRatio = null
-
 function flameGraph (opts) {
   var tree = opts.tree
   var timing = opts.timing || false
@@ -71,6 +69,8 @@ function flameGraph (opts) {
   var focusedFrame = null
   var hoverFrame = null
   var currentAnimation = null
+
+  var devicePixelRatio = null
 
   // Use custom coloring function if one has been passed in
   var colorHash = (opts.colorHash === undefined) ? defaultColorHash : (d, decimalAdjust, allSamples, tiers) => opts.colorHash ? opts.colorHash(stackTop, { d, decimalAdjust, allSamples, tiers }) : frameColors.fill
@@ -323,7 +323,7 @@ function flameGraph (opts) {
 
     var mayAnimate = opts && opts.animate
 
-    adjustForHighDpiScreen(selection.select('canvas'), w, h)
+    adjustForHighDpiScreen(selection.select('canvas'))
 
     selection
       .each(function (data) {
@@ -655,6 +655,26 @@ function flameGraph (opts) {
     })
   }
 
+  function adjustForHighDpiScreen (canvas) {
+    // Adjust canvas for high DPI screens
+    // - Size the image up N× using attributes
+    // - Squash it down N× using CSS
+    // - Scale the context so 1px in all subsequent draw operations means Npx
+  
+    // avoiding unnecessary ops if the pixelRatio didn't change since last time
+    if (devicePixelRatio !== window.devicePixelRatio) {
+      devicePixelRatio = window.devicePixelRatio
+  
+      canvas
+        .style('width', w + 'px')
+        .style('height', h + 'px')
+        .attr('width', w * devicePixelRatio)
+        .attr('height', h * devicePixelRatio)
+  
+      canvas.node().getContext('2d').scale(devicePixelRatio, devicePixelRatio)
+    }
+  }
+
   function chart (firstRender) {
     selection = d3.select(element)
 
@@ -722,7 +742,7 @@ function flameGraph (opts) {
             .on('mouseout', hideTooltip)
         }
 
-        adjustForHighDpiScreen(node.select('canvas'), w, h)
+        adjustForHighDpiScreen(node.select('canvas'))
       }
 
       categorizeTree(data)
@@ -851,25 +871,6 @@ function flameGraph (opts) {
   return chart
 }
 
-function adjustForHighDpiScreen (canvas, w, h) {
-  // Adjust canvas for high DPI screens
-  // - Size the image up N× using attributes
-  // - Squash it down N× using CSS
-  // - Scale the context so 1px in all subsequent draw operations means Npx
-
-  // avoiding unnecessary ops if the piselRatio didn't change since last time
-  if (pixelRatio !== window.devicePixelRatio) {
-    pixelRatio = window.devicePixelRatio
-
-    canvas
-      .style('width', w + 'px')
-      .style('height', h + 'px')
-      .attr('width', w * pixelRatio)
-      .attr('height', h * pixelRatio)
-
-    canvas.node().getContext('2d').scale(pixelRatio, pixelRatio)
-  }
-}
 
 // This function can be overridden by passing a function to opts.colorHash
 function defaultColorHash (d, perc, allSamples, tiers) {
