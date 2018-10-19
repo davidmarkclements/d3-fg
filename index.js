@@ -743,8 +743,6 @@ function flameGraph (opts) {
             .attr('width', w * window.devicePixelRatio)
             .attr('height', h * window.devicePixelRatio)
 
-          console.log(window.devicePixelRatio, node.select('canvas').node(), w, h)
-
           var context = node.select('canvas').node().getContext('2d')
           context.scale(window.devicePixelRatio, window.devicePixelRatio)
         }
