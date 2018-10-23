@@ -70,8 +70,6 @@ function flameGraph (opts) {
   var hoverFrame = null
   var currentAnimation = null
 
-  var devicePixelRatio = null
-
   // Use custom coloring function if one has been passed in
   var colorHash = (opts.colorHash === undefined) ? defaultColorHash : (d, decimalAdjust, allSamples, tiers) => opts.colorHash ? opts.colorHash(stackTop, { d, decimalAdjust, allSamples, tiers }) : frameColors.fill
 
@@ -661,8 +659,7 @@ function flameGraph (opts) {
     // - Squash it down N× using CSS
     // - Scale the context so 1px in all subsequent draw operations means Npx
 
-    devicePixelRatio = window.devicePixelRatio
-
+    const devicePixelRatio = window.devicePixelRatio
     // let's resize the canvas
     canvas
       .style('width', w + 'px')
@@ -670,10 +667,7 @@ function flameGraph (opts) {
       .attr('width', w * devicePixelRatio)
       .attr('height', h * devicePixelRatio)
 
-    // avoiding unnecessary ops if the pixelRatio didn't change since last time
-    if (devicePixelRatio !== window.devicePixelRatio) {
-      canvas.node().getContext('2d').scale(devicePixelRatio, devicePixelRatio)
-    }
+    canvas.node().getContext('2d').scale(devicePixelRatio, devicePixelRatio)
   }
 
   function chart (firstRender) {
