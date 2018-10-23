@@ -660,17 +660,18 @@ function flameGraph (opts) {
     // - Size the image up N× using attributes
     // - Squash it down N× using CSS
     // - Scale the context so 1px in all subsequent draw operations means Npx
-  
+
+    devicePixelRatio = window.devicePixelRatio
+
+    // let's resize the canvas
+    canvas
+      .style('width', w + 'px')
+      .style('height', h + 'px')
+      .attr('width', w * devicePixelRatio)
+      .attr('height', h * devicePixelRatio)
+
     // avoiding unnecessary ops if the pixelRatio didn't change since last time
     if (devicePixelRatio !== window.devicePixelRatio) {
-      devicePixelRatio = window.devicePixelRatio
-  
-      canvas
-        .style('width', w + 'px')
-        .style('height', h + 'px')
-        .attr('width', w * devicePixelRatio)
-        .attr('height', h * devicePixelRatio)
-  
       canvas.node().getContext('2d').scale(devicePixelRatio, devicePixelRatio)
     }
   }
@@ -870,7 +871,6 @@ function flameGraph (opts) {
 
   return chart
 }
-
 
 // This function can be overridden by passing a function to opts.colorHash
 function defaultColorHash (d, perc, allSamples, tiers) {
