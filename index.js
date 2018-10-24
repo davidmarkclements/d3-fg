@@ -385,7 +385,11 @@ function flameGraph (opts) {
           var context = canvas.getContext('2d')
           context.textBaseline = 'bottom'
 
+          // Ensure clearing is not affected by current zoom, panning, scaling etc
+          context.save()
+          context.setTransform(1, 0, 0, 1, 0, 0)
           context.clearRect(0, 0, canvas.width, canvas.height)
+          context.restore()
 
           withZoomTransform(context, function () {
             nodes.forEach(function (node) {
