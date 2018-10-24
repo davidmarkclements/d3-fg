@@ -555,6 +555,8 @@ function flameGraph (opts) {
       node = nodes.find(n => n.data.id === nodeOrId)
     }
 
+    if (!node) return null
+
     var wrapper = d3.select(element)
     var canvas = wrapper.select('canvas').node()
     var transform = d3.zoomTransform(canvas)
