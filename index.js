@@ -548,7 +548,13 @@ function flameGraph (opts) {
     context.stroke()
   }
 
-  function getNodeRect (node) {
+  function getNodeRect (nodeOrId) {
+    let node = nodeOrId
+
+    if (typeof (nodeOrId) === 'number') {
+      node = nodes.find(n => n.data.id === nodeOrId)
+    }
+
     var wrapper = d3.select(element)
     var canvas = wrapper.select('canvas').node()
     var transform = d3.zoomTransform(canvas)
@@ -558,8 +564,8 @@ function flameGraph (opts) {
     return {
       x: x0,
       y: transform.applyY(h - frameDepth(node) * c),
-      w: x1 - x0,
-      h: c
+      width: x1 - x0,
+      height: c
     }
   }
 
@@ -855,6 +861,11 @@ function flameGraph (opts) {
     // instead of a node.
     const node = nodes.find(n => n.data === data)
     zoom(node || nodes[0])
+  }
+
+  chart.getNodeRect = id => {
+    // returns the node position and size on canvas, or false.
+    return typeof (id) === 'number' && getNodeRect(id)
   }
 
   chart.on = dispatch.on.bind(dispatch)
