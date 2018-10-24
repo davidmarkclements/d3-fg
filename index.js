@@ -866,8 +866,8 @@ function flameGraph (opts) {
   }
 
   chart.getNodeRect = id => {
-    // returns the node position and size on canvas, or false.
-    return typeof (id) === 'number' && getNodeRect(id)
+    // returns the node position and size on canvas, or null.
+    return typeof (id) === 'number' ? getNodeRect(id) : null
   }
 
   chart.on = dispatch.on.bind(dispatch)
