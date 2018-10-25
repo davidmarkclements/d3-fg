@@ -553,6 +553,8 @@ function flameGraph (opts) {
   }
 
   function getNodeRect (node) {
+    if (!node) return null
+
     var wrapper = d3.select(element)
     var canvas = wrapper.select('canvas').node()
     var transform = d3.zoomTransform(canvas)
@@ -562,8 +564,8 @@ function flameGraph (opts) {
     return {
       x: x0,
       y: transform.applyY(h - frameDepth(node) * c),
-      w: x1 - x0,
-      h: c
+      width: x1 - x0,
+      height: c
     }
   }
 
@@ -853,12 +855,18 @@ function flameGraph (opts) {
     } else update()
   }
 
-  chart.zoom = (data = nodes[0].data) => {
+  chart.zoom = (nodeData = nodes[0].data) => {
     // nodes[0] = root node
     // users of this method can zoom in on a data point
     // instead of a node.
-    const node = nodes.find(n => n.data === data)
+    const node = nodes.find(n => n.data === nodeData)
     zoom(node || nodes[0])
+  }
+
+  chart.getNodeRect = nodeData => {
+    // returns the node position and size on canvas, or null.
+    const node = nodes.find(n => n.data === nodeData)
+    return getNodeRect(node)
   }
 
   chart.on = dispatch.on.bind(dispatch)
