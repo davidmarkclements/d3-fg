@@ -26,7 +26,7 @@ Using `d3.dispatch`, d3-fg defines events that can be listened for and responded
 
  ```js
  flamegraph.on('click', (nodeData, rect, pointerCoords) => {
-   nodeData         // Null or Object, the datum from the original data set represented by this frame, from node.data
+   nodeData         // Null or Object, this datum from the original data set (from node.data)
    rect,            // Object, the co-ordinates of this frame's rendered rectangle
    pointerCoords    // Object, the `x` and `y` co-ordinates of the click event
  }
@@ -38,7 +38,7 @@ Using `d3.dispatch`, d3-fg defines events that can be listened for and responded
 
  ```js
  flamegraph.on('zoom', (nodeData) => {
-   nodeData         // Null or Object, the datum from the original data set represented by this frame, from node.data
+   nodeData         // Null or Object, this datum from the original data set (from node.data)
  }
  ```
 
@@ -74,7 +74,7 @@ require('d3-flamegraph')({
   height,     // Number (pixels). If not set, is calculated based on tallest stack
   width,      // Number (pixels). If not set, is calculated based on clientWidth when called
   cellHeight, // Number (pixels). Defaults to 18 pixels. Font sizes scale along with this value.
-  heatBars, // Boolean, when false (the default), heat is visualized as the background colour of stack frames;
+  heatBars, // Boolean, when false (default), heat is visualized as the background colour of stack frames;
             // when true, heat is visualized by a bar drawn on _top_ of stack frames
   frameColors: { // Object, colors for the stack frame boxes.
                  // Used when `heatBars: true`, and for the "all stacks" row when `heatBars: false`
