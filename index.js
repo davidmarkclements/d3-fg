@@ -80,7 +80,7 @@ function flameGraph (opts) {
   var renderTooltip = (opts.renderTooltip === undefined) ? defaultRenderTooltip : node => opts.renderTooltip && opts.renderTooltip(node)
 
   // Use custom handler for clicks on canvas if defined; preserves default `this` as being the DOM object
-  var clickHandler = (opts.clickHandler === undefined) ? defaultClickHandler : opts.clickHandler || function () { }
+  var clickHandler = (opts.clickHandler === undefined) ? defaultClickHandler : opts.clickHandler || function (target) { return target || nodes ? nodes[0] : null }
 
   onresize()
 
@@ -707,11 +707,11 @@ function flameGraph (opts) {
             const pointerCoords = { x: d3.event.offsetX, y: d3.event.offsetY }
             const target = getNodeAt(this, pointerCoords.x, pointerCoords.y)
 
-            // Passes d3-fg target node object, in context of DOM element
-            clickHandler.call(this, target)
-
             // Passes original datum and rect / event co-ordinates, same as hoverin / hoverout dispatches
             dispatch.call('click', null, target.data, getNodeRect(target), pointerCoords)
+
+            // Passes d3-fg target node object, in context of DOM element
+            return clickHandler.call(this, target)
           })
           .on('mousemove', function () {
             var target = getNodeAt(this, d3.event.offsetX, d3.event.offsetY)
