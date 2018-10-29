@@ -56,7 +56,7 @@ function flameGraph (opts) {
   var panZoom = d3.zoom().on('zoom', function () {
     update({ animate: false })
   })
-  var dispatch = d3.dispatch('zoom', 'hoverin', 'hoverout', 'animationEnd')
+  var dispatch = d3.dispatch('zoom', 'hoverin', 'hoverout', 'animationEnd', 'click')
   var selection = null
   var transitionDuration = 500
   var transitionEase = d3.easeCubicInOut
@@ -78,6 +78,9 @@ function flameGraph (opts) {
 
   // Use custom tooltip rendering function if defined
   var renderTooltip = (opts.renderTooltip === undefined) ? defaultRenderTooltip : node => opts.renderTooltip && opts.renderTooltip(node)
+
+  // Use custom handler for clicks on canvas if defined; preserves default `this` as being the DOM object
+  var clickHandler = (opts.clickHandler === undefined) ? defaultClickHandler : opts.clickHandler || function () { }
 
   onresize()
 
@@ -503,6 +506,10 @@ function flameGraph (opts) {
     }
   }
 
+  function defaultClickHandler (target) {
+    return zoom(target || nodes[0])
+  }
+
   function defaultRenderLabel (context, node, x, y, width) {
     // baseline size of 12px—for every ~3px that cellHeight grows above its baseline of 18px,
     // grow the font size 1px
@@ -697,8 +704,14 @@ function flameGraph (opts) {
           .on('wheel.zoom', null)
           .on('dblclick.zoom', null)
           .on('click', function () {
-            var target = getNodeAt(this, d3.event.offsetX, d3.event.offsetY)
-            return zoom(target || nodes[0])
+            const pointerCoords = { x: d3.event.offsetX, y: d3.event.offsetY }
+            const target = getNodeAt(this, pointerCoords.x, pointerCoords.y)
+
+            // Passes d3-fg target node object, in context of DOM element
+            clickHandler.call(this, target)
+
+            // Passes original datum and rect / event co-ordinates, same as hoverin / hoverout dispatches
+            dispatch.call('click', null, target.data, getNodeRect(target), pointerCoords)
           })
           .on('mousemove', function () {
             var target = getNodeAt(this, d3.event.offsetX, d3.event.offsetY)
