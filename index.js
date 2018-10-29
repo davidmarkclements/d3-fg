@@ -70,8 +70,11 @@ function flameGraph (opts) {
   var hoverFrame = null
   var currentAnimation = null
 
-  // Use custom coloring function if one has been passed in
+  // Use custom coloring function if defined
   var colorHash = (opts.colorHash === undefined) ? defaultColorHash : (d, decimalAdjust, allSamples, tiers) => opts.colorHash ? opts.colorHash(stackTop, { d, decimalAdjust, allSamples, tiers }) : frameColors.fill
+
+  // Use custom text label rendering function if defined
+  var renderLabel = (opts.renderLabel === undefined) ? defaultRenderLabel : (context, node, x, y, width) => opts.renderLabel && opts.renderLabel(c, { context, node, x, y, width })
 
   // Use custom tooltip rendering function if defined
   var renderTooltip = (opts.renderTooltip === undefined) ? defaultRenderTooltip : node => opts.renderTooltip && opts.renderTooltip(node)
@@ -500,7 +503,7 @@ function flameGraph (opts) {
     }
   }
 
-  function renderLabel (context, node, x, y, width) {
+  function defaultRenderLabel (context, node, x, y, width) {
     // baseline size of 12px—for every ~3px that cellHeight grows above its baseline of 18px,
     // grow the font size 1px
     // This way the font size gets relatively smaller, giving it some breathing room at larger cell heights
