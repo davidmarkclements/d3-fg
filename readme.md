@@ -18,9 +18,40 @@ var element = document.querySelector('chart') // <chart> element which should be
 var flamegraph = require('d3-flamegraph')({tree, element})
 ```
 
+## Dispatch listeners
+
+Using `d3.dispatch`, d3-fg defines events that can be listened for and responded to in the calling application.
+
+- `click` On clicks anywhere on the flamegraph:
+
+ ```js
+ flamegraph.on('click', (nodeData, rect, pointerCoords) => {
+   nodeData         // Null or Object, the datum from the original data set represented by this frame, from node.data
+   rect,            // Object, the co-ordinates of this frame's rendered rectangle
+   pointerCoords    // Object, the `x` and `y` co-ordinates of the click event
+ }
+ ```
+
+ - `hoverin` On hovering in to a rendered frame on the flamegraph. Same args as `click`
+ - `hoverout` On hovering out of a rendered frame on the flamegraph. Same args as `click`, `nodeData` expected to be `null`
+ - `zoom` On d3-fg executing a zoom on a frame.
+
+ ```js
+ flamegraph.on('zoom', (nodeData) => {
+   nodeData         // Null or Object, the datum from the original data set represented by this frame, from node.data
+ }
+ ```
+
+ - `animationEnd` On d3-fg completing animations. No args.
+
 ## Options
 
-Pass in options as an object:
+Pass in options as an object, including optional overrides for the following built-in actions:
+
+ - `colorHash` - Applying calculated colours using a built-in orange-to-red scale based on time spent at stack top
+ - `renderTooltip` - Creating and updating a tooltip giving basic frame information
+ - `renderLabel` - Writing frame information on the frames themselves in Canvas
+ - `clickHandler` - Zooming in on nodes when clicked on, or zooming out when clicking outside any node
 
 ```js
 require('d3-flamegraph')({
@@ -43,16 +74,6 @@ require('d3-flamegraph')({
   height,     // Number (pixels). If not set, is calculated based on tallest stack
   width,      // Number (pixels). If not set, is calculated based on clientWidth when called
   cellHeight, // Number (pixels). Defaults to 18 pixels. Font sizes scale along with this value.
-  colorHash: function (stackTop, options) { // Function sets each frame's RGB value. Default used if unset
-    const {
-      d,             // Object, d3 datum: one frame, one item in the tree
-      decimalAdjust, // Number, optional multiplier adjusting color intensity up or down e.g. for borders
-      allSamples,    // Number, total summed time value (i.e. time represented by flamegraph width)
-      tiers          // Boolean, true if base color varies by frame type e.g. app vs core
-    } = options
-    stackTop(d)      // Returns number representing time in this frame not in any non-hidden child frames
-    return           // String, expects valid rgb, rgba or hash string
-  },
   heatBars, // Boolean, when false (the default), heat is visualized as the background colour of stack frames;
             // when true, heat is visualized by a bar drawn on _top_ of stack frames
   frameColors: { // Object, colors for the stack frame boxes.
@@ -64,7 +85,38 @@ require('d3-flamegraph')({
     default,        // String, the default color (required).
     [categoryName], // Optionally, colors for different categories such as "app", "cpp".
                     // If one of these is not set for a category, labelColors.default is used
-  }
+  },
+
+
+  // Optional overridable functions. Pass a function; or null to disable. If undefined, default is used.
+  colorHash: function (stackTop, options) { // Sets each frame's RGB value. Default used if unset
+    const {
+      d,             // Object, d3 datum: one frame, one item in the tree
+      decimalAdjust, // Number, optional multiplier adjusting color intensity up or down e.g. for borders
+      allSamples,    // Number, total summed time value (i.e. time represented by flamegraph width)
+      tiers          // Boolean, true if base color varies by frame type e.g. app vs core
+    } = options
+    stackTop(d)      // Returns number representing time in this frame not in any non-hidden child frames
+    return           // String, expects valid rgb, rgba or hash string
+  },
+  renderTooltip: function (node) { // Renders tooltips created within d3-fg
+    node             // Object, a d3-fg node representing the highlighted frame
+    // no return value expected
+  },
+  renderLabel: function (stackHeight, options) { // Writing on-frame Canvas labels
+    const {
+      context,       // Object, the Canvas DOM object being modified
+      node,          // Object, a d3-fg node representing the frame being labelled
+      x,             // Number, the x co-ordinate of the top left corner of the frame
+      y,             // Number, the y co-ordinate of the top left corner of the frame
+      width          // Number, the pixel width of the frame
+    } = options
+    stackHeight      // Number, the default pixel height for all stacks in the flamegraph
+  },
+  clickHandler: function (target) { // Responds to clicks on the canvas, before calling dispatch
+    target           // Null or Object, a d3-fg node representing the frame clicked on
+    this             // The DOM object (in this case, the Canvas)
+    return           // Returns target or all-stacks frame
 })
 ```
 
