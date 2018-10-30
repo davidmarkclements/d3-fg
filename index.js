@@ -56,7 +56,7 @@ function flameGraph (opts) {
   var panZoom = d3.zoom().on('zoom', function () {
     update({ animate: false })
   })
-  var dispatch = d3.dispatch('zoom', 'hoverin', 'hoverout', 'animationEnd', 'clickin', 'clickout')
+  var dispatch = d3.dispatch('zoom', 'hoverin', 'hoverout', 'animationEnd', 'click')
   var selection = null
   var transitionDuration = 500
   var transitionEase = d3.easeCubicInOut
@@ -707,11 +707,12 @@ function flameGraph (opts) {
             const pointerCoords = { x: d3.event.offsetX, y: d3.event.offsetY }
             const target = getNodeAt(this, pointerCoords.x, pointerCoords.y)
 
-            // Passes original datum and rect / event co-ordinates, same as hoverin / hoverout dispatches
             if (target) {
-              dispatch.call('clickin', null, target.data, getNodeRect(target), pointerCoords)
+              // Passes original datum and rect / event co-ordinates, same as hoverin / hoverout dispatches
+              dispatch.call('click', null, target.data, getNodeRect(target), pointerCoords)
             } else {
-              dispatch.call('clickout', null, null)
+              // Click on the flamegraph background. Listeners can ignore it or treat it as deselection
+              dispatch.call('click', null, null, null, null)
             }
 
             // Passes d3-fg target node object, in context of DOM element
