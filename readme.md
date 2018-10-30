@@ -22,17 +22,15 @@ var flamegraph = require('d3-flamegraph')({tree, element})
 
 Using `d3.dispatch`, d3-fg defines events that can be listened for and responded to in the calling application.
 
-- `clickin` On clicks that are on drawn frames on the flamegraph, before calling the click handler:
+- `click` On clicks on the flamegraph. If the click is not on a frame, all args are passed as `null` to allow for 'deselection'-like responses:
 
  ```js
- flamegraph.on('clickin', (nodeData, rect, pointerCoords) => {
+ flamegraph.on('click', (nodeData, rect, pointerCoords) => {
    nodeData         // Null or Object, this datum from the original data set (from node.data)
-   rect,            // Object, the co-ordinates of this frame's rendered rectangle
-   pointerCoords    // Object, the `x` and `y` co-ordinates of the click event
+   rect,            // Null or Object, the co-ordinates of this frame's rendered rectangle
+   pointerCoords    // Null or Object, the `x` and `y` co-ordinates of the click event
  }
  ```
-
- - `clickout` On clicks outside of drawn frames, on the flamegraph background, before calling the click handler. No args passed.
 
  - `hoverin` On hovering in to a rendered frame on the flamegraph. Same args as `click`
  - `hoverout` On hovering out of a rendered frame on the flamegraph. No args passed.
