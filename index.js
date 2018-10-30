@@ -56,7 +56,7 @@ function flameGraph (opts) {
   var panZoom = d3.zoom().on('zoom', function () {
     update({ animate: false })
   })
-  var dispatch = d3.dispatch('zoom', 'hoverin', 'hoverout', 'animationEnd')
+  var dispatch = d3.dispatch('zoom', 'hoverin', 'hoverout', 'animationEnd', 'click')
   var selection = null
   var transitionDuration = 500
   var transitionEase = d3.easeCubicInOut
@@ -70,11 +70,17 @@ function flameGraph (opts) {
   var hoverFrame = null
   var currentAnimation = null
 
-  // Use custom coloring function if one has been passed in
+  // Use custom coloring function if defined
   var colorHash = (opts.colorHash === undefined) ? defaultColorHash : (d, decimalAdjust, allSamples, tiers) => opts.colorHash ? opts.colorHash(stackTop, { d, decimalAdjust, allSamples, tiers }) : frameColors.fill
+
+  // Use custom text label rendering function if defined
+  var renderLabel = (opts.renderLabel === undefined) ? defaultRenderLabel : (context, node, x, y, width) => opts.renderLabel && opts.renderLabel(c, { context, node, x, y, width })
 
   // Use custom tooltip rendering function if defined
   var renderTooltip = (opts.renderTooltip === undefined) ? defaultRenderTooltip : node => opts.renderTooltip && opts.renderTooltip(node)
+
+  // Use custom handler for clicks on canvas if defined; preserves default `this` as being the DOM object
+  var clickHandler = (opts.clickHandler === undefined) ? defaultClickHandler : opts.clickHandler || function (target) { return target || nodes ? nodes[0] : null }
 
   onresize()
 
@@ -500,7 +506,11 @@ function flameGraph (opts) {
     }
   }
 
-  function renderLabel (context, node, x, y, width) {
+  function defaultClickHandler (target) {
+    return zoom(target || nodes[0])
+  }
+
+  function defaultRenderLabel (context, node, x, y, width) {
     // baseline size of 12px—for every ~3px that cellHeight grows above its baseline of 18px,
     // grow the font size 1px
     // This way the font size gets relatively smaller, giving it some breathing room at larger cell heights
@@ -694,8 +704,19 @@ function flameGraph (opts) {
           .on('wheel.zoom', null)
           .on('dblclick.zoom', null)
           .on('click', function () {
-            var target = getNodeAt(this, d3.event.offsetX, d3.event.offsetY)
-            return zoom(target || nodes[0])
+            const pointerCoords = { x: d3.event.offsetX, y: d3.event.offsetY }
+            const target = getNodeAt(this, pointerCoords.x, pointerCoords.y)
+
+            if (target) {
+              // Passes original datum and rect / event co-ordinates, same as hoverin / hoverout dispatches
+              dispatch.call('click', null, target.data, getNodeRect(target), pointerCoords)
+            } else {
+              // Click on the flamegraph background. Listeners can ignore it or treat it as deselection
+              dispatch.call('click', null, null, null, null)
+            }
+
+            // Passes d3-fg target node object, in context of DOM element
+            return clickHandler.call(this, target)
           })
           .on('mousemove', function () {
             var target = getNodeAt(this, d3.event.offsetX, d3.event.offsetY)
