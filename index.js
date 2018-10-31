@@ -363,9 +363,10 @@ function flameGraph (opts) {
             .sort(doSort)
 
           // Make "all stacks" as wide as every visible stack.
-          // This is important when we're zoomed in.
+          // These are d3 tree nodes with `.value` properties containing the sums from above,
+          // so we don't need sumChildValues() but can just add those sums up.
           data.value = data.children
-            ? data.children.reduce((acc, node) => sumChildValues(acc, node.data), 0)
+            ? data.children.reduce((acc, node) => acc + node.value, 0)
             : 0
         })
 
