@@ -125,11 +125,7 @@ require('d3-flamegraph')({
 
 Boolean, affects the widths of stack frames excluded by type filters.
 
-This is an advanced option that is best used together with `heatBars: true` and a custom sort function that does something that is useful for your visualization.
-
-When false (default), hidden frames take up horizontal space, and visible children of hidden stack frames are aligned along where the hidden frame would be. In practice, this means there may be gaps between frames but toggling filters will only ever visually move frames vertically.
-
-When true, hidden frames do not take up space, but instead all their visible children are aligned closely next to each other, to the left of their closest visible parent. In practice, this means that there are no gaps between frames, instead the amount of free space on the right of a visible frame indicates the amount of time it was at the top of the stack. When toggling filters, frames may jump horizontally.
+When true, hidden frames do not take up space, but instead all their visible children are aligned closely next to each other, to the left of their closest visible parent. In practice, this means that there are no gaps between frames. When toggling filters, frames may jump horizontally.
 
 ## Dependencies
 
