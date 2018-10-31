@@ -318,17 +318,25 @@ function flameGraph (opts) {
 
   var partition = d3.partition()
 
-  function sumChildValues (acc, node) {
-    // If a child is hidden or is (an ancestor of) the focusedFrame frame, don't count it
-    if (node.fade || node === focusedFrame) {
-      return acc + (node.children ? node.children.reduce(sumChildValues, 0) : 0)
+  function sumChildValues (node) {
+    var acc = 0
+    if (!node.children) return acc
+    for (var i = 0; i < node.children.length; i++) {
+      var d = node.children[i]
+      // If a child is hidden or is (an ancestor of) the focusedFrame frame, don't count it
+      if (d.fade || d === focusedFrame) {
+        acc += sumChildValues(d)
+        continue
+      }
+      // When collapsing hidden nodes, they only count for their children's values.
+      // This way there is no space between children of this hidden node and adjacent nodes.
+      if (d.hide && collapseHiddenNodeWidths) {
+        acc += sumChildValues(d)
+        continue
+      }
+      acc += d.value
     }
-    // When collapsing hidden nodes, they only count for their children's values.
-    // This way there is no space between children of this hidden node and adjacent nodes.
-    if (node.hide && collapseHiddenNodeWidths) {
-      return acc + (node.children ? node.children.reduce(sumChildValues, 0) : 0)
-    }
-    return acc + node.value
+    return acc
   }
 
   function update (opts) {
@@ -355,16 +363,11 @@ function flameGraph (opts) {
               // d3 sums value + all child values to get the value for a node,
               // we can set `value = specifiedValue - all child values` to counteract that.
               // the `.value`s in our data already include the sum of all child values.
-              const childValues = d.children
-                ? d.children.reduce(sumChildValues, 0)
-                : 0
-              return d.value - childValues
+              return d.value - sumChildValues(d)
             })
             .sort(doSort)
 
           // Make "all stacks" as wide as every visible stack.
-          // These are d3 tree nodes with `.value` properties containing the sums from above,
-          // so we don't need sumChildValues() but can just add those sums up.
           data.value = data.children
             ? data.children.reduce((acc, node) => acc + node.value, 0)
             : 0
