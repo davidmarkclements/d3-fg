@@ -42,6 +42,7 @@ function flameGraph (opts) {
   var tree = opts.tree
   var timing = opts.timing || false
   var element = opts.element
+  var collapseHiddenNodeWidths = opts.collapseHiddenNodeWidths || false
   var c = opts.cellHeight || 18 // cell height
   var h = opts.height || (maxDepth(tree) + 2) * c // graph height
   var minHeight = opts.minHeight || 950
@@ -317,9 +318,25 @@ function flameGraph (opts) {
 
   var partition = d3.partition()
 
-  function sumChildValues (a, b) {
-    // If a child is hidden or is (an ancestor of) the focusedFrame frame, don't count it
-    return a + (b.fade || b === focusedFrame ? 0 : b.value)
+  function sumChildValues (node) {
+    var acc = 0
+    if (!node.children) return acc
+    for (var i = 0; i < node.children.length; i++) {
+      var d = node.children[i]
+      // If a child is hidden or is (an ancestor of) the focusedFrame frame, don't count it
+      if (d.fade || d === focusedFrame) {
+        acc += sumChildValues(d)
+        continue
+      }
+      // When collapsing hidden nodes, they only count for their children's values.
+      // This way there is no space between children of this hidden node and adjacent nodes.
+      if (d.hide && collapseHiddenNodeWidths) {
+        acc += sumChildValues(d)
+        continue
+      }
+      acc += d.value
+    }
+    return acc
   }
 
   function update (opts) {
@@ -339,20 +356,21 @@ function flameGraph (opts) {
           data
             .sum(function (d) {
               // If this is the ancestor of a focusedFrame frame, use the same value (width) as the focusedFrame frame.
-              if (d.fade) return d.children.reduce(sumChildValues, 0)
+              if (d.fade) return 0
+              // When collapsing hidden nodes, they don't have a width; d3 will sum up their children's widths
+              if (d.hide && collapseHiddenNodeWidths) return 0
 
               // d3 sums value + all child values to get the value for a node,
               // we can set `value = specifiedValue - all child values` to counteract that.
               // the `.value`s in our data already include the sum of all child values.
-              const childValues = d.children
-                ? d.children.reduce(sumChildValues, 0)
-                : 0
-              return d.value - childValues
+              return d.value - sumChildValues(d)
             })
             .sort(doSort)
 
           // Make "all stacks" as wide as every visible stack.
-          data.value = data.children ? data.children.reduce(sumChildValues, 0) : 0
+          data.value = data.children
+            ? data.children.reduce((acc, node) => acc + node.value, 0)
+            : 0
         })
 
         time('partition', function () {
@@ -431,6 +449,7 @@ function flameGraph (opts) {
   }
 
   function renderNode (context, node, ease, state) {
+    // Hidden by filters
     if (node.data.hide) return
 
     var depth = frameDepth(node)
@@ -447,7 +466,16 @@ function flameGraph (opts) {
       x = interpolate(scaleToWidth(prev.x0), x, ease)
     }
 
-    if (width < 1) return
+    // don't bother drawing anything fancy for tiny frames, just do a box.
+    if (width < 3) {
+      // Hidden by zoom
+      if (node.data.value === 0) return
+      context.fillStyle = heatBars || !node.parent
+        ? frameColors.fill
+        : colorHash(node.data, undefined, allSamples, tiers)
+      context.fillRect(x, y, Math.max(width, 1), c)
+      return
+    }
 
     if (state === STATE_HOVER || state === STATE_UNHOVER) {
       context.clearRect(x, y, width, c)
