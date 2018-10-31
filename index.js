@@ -448,8 +448,6 @@ function flameGraph (opts) {
   function renderNode (context, node, ease, state) {
     // Hidden by filters
     if (node.data.hide) return
-    // Hidden by zoom
-    if (node.data.value === 0) return
 
     var depth = frameDepth(node)
     var width = frameWidth(node)
@@ -467,6 +465,8 @@ function flameGraph (opts) {
 
     // don't bother drawing anything fancy for tiny frames, just do a box.
     if (width < 3) {
+      // Hidden by zoom
+      if (node.data.value === 0) return
       context.fillStyle = heatBars || !node.parent
         ? frameColors.fill
         : colorHash(node.data, undefined, allSamples, tiers)
