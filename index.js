@@ -321,7 +321,7 @@ function flameGraph (opts) {
   function sumChildValues (acc, node) {
     // If a child is hidden or is (an ancestor of) the focusedFrame frame, don't count it
     if (node.fade || node === focusedFrame) {
-      return acc
+      return acc + node.children.reduce(sumChildValues, 0)
     }
     // When collapsing hidden nodes, they only count for their children's values.
     // This way there is no space between children of this hidden node and adjacent nodes.
@@ -348,7 +348,7 @@ function flameGraph (opts) {
           data
             .sum(function (d) {
               // If this is the ancestor of a focusedFrame frame, use the same value (width) as the focusedFrame frame.
-              if (d.fade) return d.children.reduce(sumChildValues, 0)
+              if (d.fade) return 0
               // When collapsing hidden nodes, they don't have a width; d3 will sum up their children's widths
               if (d.hide && collapseHiddenNodeWidths) return 0
 
