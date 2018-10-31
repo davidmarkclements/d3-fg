@@ -42,6 +42,7 @@ function flameGraph (opts) {
   var tree = opts.tree
   var timing = opts.timing || false
   var element = opts.element
+  var collapseHiddenNodeWidths = opts.collapseHiddenNodeWidths || false
   var c = opts.cellHeight || 18 // cell height
   var h = opts.height || (maxDepth(tree) + 2) * c // graph height
   var minHeight = opts.minHeight || 950
@@ -317,9 +318,17 @@ function flameGraph (opts) {
 
   var partition = d3.partition()
 
-  function sumChildValues (a, b) {
+  function sumChildValues (acc, node) {
     // If a child is hidden or is (an ancestor of) the focusedFrame frame, don't count it
-    return a + (b.fade || b === focusedFrame ? 0 : b.value)
+    if (node.fade || node === focusedFrame) {
+      return acc
+    }
+    // When collapsing hidden nodes, they only count for their children's values.
+    // This way there is no space between children of this hidden node and adjacent nodes.
+    if (node.hide && collapseHiddenNodeWidths) {
+      return acc + node.children.reduce(sumChildValues, 0)
+    }
+    return acc + node.value
   }
 
   function update (opts) {
@@ -340,6 +349,8 @@ function flameGraph (opts) {
             .sum(function (d) {
               // If this is the ancestor of a focusedFrame frame, use the same value (width) as the focusedFrame frame.
               if (d.fade) return d.children.reduce(sumChildValues, 0)
+              // When collapsing hidden nodes, they don't have a width; d3 will sum up their children's widths
+              if (d.hide && collapseHiddenNodeWidths) return 0
 
               // d3 sums value + all child values to get the value for a node,
               // we can set `value = specifiedValue - all child values` to counteract that.
@@ -352,7 +363,10 @@ function flameGraph (opts) {
             .sort(doSort)
 
           // Make "all stacks" as wide as every visible stack.
-          data.value = data.children ? data.children.reduce(sumChildValues, 0) : 0
+          // This is important when we're zoomed in.
+          data.value = data.children
+            ? data.children.reduce((acc, node) => sumChildValues(acc, node.data), 0)
+            : 0
         })
 
         time('partition', function () {
