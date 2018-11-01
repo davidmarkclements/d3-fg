@@ -71,19 +71,16 @@ function flameGraph (opts) {
   var hoverFrame = null
   var currentAnimation = null
 
-  // Use custom coloring function if defined
+  // Overridable functions. Use custom function if passed in, default if undefined, or, do nothing (or neutral fallback) if passed null
   var colorHash = (opts.colorHash === undefined) ? defaultColorHash : (d, decimalAdjust, allSamples, tiers) => opts.colorHash ? opts.colorHash(stackTop, { d, decimalAdjust, allSamples, tiers }) : frameColors.fill
 
-  // Use custom text label rendering function if defined
   var renderLabel = (opts.renderLabel === undefined) ? defaultRenderLabel : (context, node, x, y, width) => opts.renderLabel && opts.renderLabel(c, { context, node, x, y, width })
 
-  // Use custom tooltip rendering function if defined
   var renderTooltip = (opts.renderTooltip === undefined) ? defaultRenderTooltip : node => opts.renderTooltip && opts.renderTooltip(node)
 
   var stackBoxGlobals = { frameHeight: c, STATE_HOVER, STATE_UNHOVER, STATE_IDLE, frameColors, colorHash }
   var renderStackFrameBox = (opts.renderStackFrameBox === undefined) ? defaultRenderStackFrameBox : (context, node, x, y, width, state) => opts.renderStackFrameBox && opts.renderStackFrameBox(stackBoxGlobals, { context, node, x, y, width, state })
 
-  // Use custom handler for clicks on canvas if defined; preserves default `this` as being the DOM object
   var clickHandler = (opts.clickHandler === undefined) ? defaultClickHandler : opts.clickHandler || function (target) { return target || nodes ? nodes[0] : null }
 
   onresize()
