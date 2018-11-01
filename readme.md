@@ -118,6 +118,12 @@ require('d3-flamegraph')({
     target           // Null or Object, a d3-fg node representing the frame clicked on
     this             // The DOM object (in this case, the Canvas)
     return           // Returns target or all-stacks frame
+  },
+  hoverStyle: function (context, nodeData, rect) { // Applies style to the hoverred canvas frame
+    context          // Object, the Canvas DOM object being modified
+    node             // Object, a d3-fg node representing the frame being hoverred
+    rect             // Object, { x, y, width, height } of the rectangular area being styled
+  }
 })
 ```
 
