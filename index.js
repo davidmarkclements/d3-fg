@@ -80,6 +80,9 @@ function flameGraph (opts) {
   // Use custom tooltip rendering function if defined
   var renderTooltip = (opts.renderTooltip === undefined) ? defaultRenderTooltip : node => opts.renderTooltip && opts.renderTooltip(node)
 
+  var stackBoxGlobals = { frameHeight: c, STATE_HOVER, STATE_UNHOVER, STATE_IDLE, frameColors, colorHash }
+  var renderStackFrameBox = (opts.renderStackFrameBox === undefined) ? defaultRenderStackFrameBox : (context, node, x, y, width, state) => opts.renderStackFrameBox && opts.renderStackFrameBox(stackBoxGlobals, { context, node, x, y, width, state })
+
   // Use custom handler for clicks on canvas if defined; preserves default `this` as being the DOM object
   var clickHandler = (opts.clickHandler === undefined) ? defaultClickHandler : opts.clickHandler || function (target) { return target || nodes ? nodes[0] : null }
 
@@ -499,7 +502,7 @@ function flameGraph (opts) {
     }
   }
 
-  function renderStackFrameBox (context, node, x, y, width, state) {
+  function defaultRenderStackFrameBox (context, node, x, y, width, state) {
     var fillColor = heatBars || !node.parent
       ? frameColors.fill
       : colorHash(node.data, undefined, allSamples, tiers)
