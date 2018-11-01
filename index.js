@@ -466,23 +466,12 @@ function flameGraph (opts) {
       x = interpolate(scaleToWidth(prev.x0), x, ease)
     }
 
-    // don't bother drawing anything fancy for tiny frames, just do a box.
-    if (width < 3) {
-      // Hidden by zoom
-      if (node.data.value === 0) return
-      context.fillStyle = heatBars || !node.parent
-        ? frameColors.fill
-        : colorHash(node.data, undefined, allSamples, tiers)
-      context.fillRect(x, y, Math.max(width, 1), c)
-      return
-    }
-
     if (state === STATE_HOVER || state === STATE_UNHOVER) {
       context.clearRect(x, y, width, c)
     }
 
     // Draw heat.
-    if (heatBars && node.parent != null &&
+    if (width >= 3 && heatBars && node.parent != null &&
         // These states mean we're redrawing on top of an existing rendered graph,
         // so we shouldn't exceed the current rectangle's boundaries; the heat will
         // still be visible from before
@@ -500,6 +489,18 @@ function flameGraph (opts) {
   }
 
   function defaultRenderStackFrameBox (context, node, x, y, width, state) {
+    // don't bother drawing anything fancy for tiny frames, just do a box.
+    if (width < 3) {
+      // Hidden by zoom
+      if (node.data.value === 0) return
+
+      context.fillStyle = heatBars || !node.parent
+        ? frameColors.fill
+        : colorHash(node.data, undefined, allSamples, tiers)
+      context.fillRect(x, y, Math.max(width, 1), c)
+      return
+    }
+
     var fillColor = heatBars || !node.parent
       ? frameColors.fill
       : colorHash(node.data, undefined, allSamples, tiers)
