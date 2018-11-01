@@ -83,6 +83,8 @@ function flameGraph (opts) {
   // Use custom handler for clicks on canvas if defined; preserves default `this` as being the DOM object
   var clickHandler = (opts.clickHandler === undefined) ? defaultClickHandler : opts.clickHandler || function (target) { return target || nodes ? nodes[0] : null }
 
+  var hoverStyle = (opts.hoverStyle === undefined) ? defaultHoverStyle : opts.hoverStyle || function (context, node, rect) { context.fill() }
+
   onresize()
 
   function onresize () {
@@ -514,10 +516,7 @@ function flameGraph (opts) {
     context.beginPath()
     context.rect(x, y, width, c)
     if (state === STATE_HOVER) {
-      context.save()
-      context.globalAlpha = 0.8
-      context.fill()
-      context.restore()
+      hoverStyle(context, node, { x, y, width, height: c })
     } else {
       context.fill()
     }
@@ -532,6 +531,13 @@ function flameGraph (opts) {
     } else {
       context.stroke()
     }
+  }
+
+  function defaultHoverStyle (context, node, rect) {
+    context.save()
+    context.globalAlpha = 0.8
+    context.fill()
+    context.restore()
   }
 
   function defaultClickHandler (target) {
