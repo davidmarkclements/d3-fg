@@ -114,9 +114,8 @@ require('d3-flamegraph')({
     } = options
     frameHeight      // Number, the default pixel height for all frames in the flamegraph
   },
-  renderStackFrameBox: function (globals, options) {
+  renderStackFrameBox: function (globals, locals, rect) {
     const {
-      frameHeight,   // Number, the default pixel height for all frames in the flamegraph
       STATE_HOVER,   // Number, for comparison against `state` to see if this frame is hoverred
       STATE_UNHOVER, // Number, as above but for frames that are no longer hoverred
       STATE_IDLE,    // Number, as above but for frames in normal, resting state
@@ -126,11 +125,9 @@ require('d3-flamegraph')({
     const {
       context,       // Object, the Canvas DOM object being modified
       node,          // Object, a d3-fg node representing the frame being labelled
-      x,             // Number, the x co-ordinate of the top left corner of the frame
-      y,             // Number, the y co-ordinate of the top left corner of the frame
-      width,         // Number, the pixel width of the frame
       state          // Number, see STATE_HOVER, STATE_UNHOVER and STATE_IDLE above
-    } = options
+    } = locals
+    rect             // Object, numeric { x, y, width, height } values for this frame's rectangle
   }
   clickHandler: function (target) { // Responds to clicks on the canvas, before calling dispatch
     target           // Null or Object, a d3-fg node representing the frame clicked on

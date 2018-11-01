@@ -78,8 +78,8 @@ function flameGraph (opts) {
 
   var renderTooltip = (opts.renderTooltip === undefined) ? defaultRenderTooltip : node => opts.renderTooltip && opts.renderTooltip(node)
 
-  var stackBoxGlobals = { frameHeight: c, STATE_HOVER, STATE_UNHOVER, STATE_IDLE, frameColors, colorHash }
-  var renderStackFrameBox = (opts.renderStackFrameBox === undefined) ? defaultRenderStackFrameBox : (context, node, x, y, width, state) => opts.renderStackFrameBox && opts.renderStackFrameBox(stackBoxGlobals, { context, node, x, y, width, state })
+  var stackBoxGlobals = { STATE_HOVER, STATE_UNHOVER, STATE_IDLE, frameColors, colorHash } // Shouldn't include `c` i.e. frame height because its value can change e.g. chart.cellHeight(newC)
+  var renderStackFrameBox = (opts.renderStackFrameBox === undefined) ? defaultRenderStackFrameBox : (context, node, x, y, width, state) => opts.renderStackFrameBox && opts.renderStackFrameBox(stackBoxGlobals, { context, node, state }, { x, y, width, height: c })
 
   var clickHandler = (opts.clickHandler === undefined) ? defaultClickHandler : opts.clickHandler || function (target) { return target || nodes ? nodes[0] : null }
 
