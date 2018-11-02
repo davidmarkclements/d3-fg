@@ -71,16 +71,16 @@ function flameGraph (opts) {
   var hoverFrame = null
   var currentAnimation = null
 
-  // Use custom coloring function if defined
+  // Overridable functions. Use custom function if passed in, default if undefined, or, do nothing (or neutral fallback) if passed null
   var colorHash = (opts.colorHash === undefined) ? defaultColorHash : (d, decimalAdjust, allSamples, tiers) => opts.colorHash ? opts.colorHash(stackTop, { d, decimalAdjust, allSamples, tiers }) : frameColors.fill
 
-  // Use custom text label rendering function if defined
   var renderLabel = (opts.renderLabel === undefined) ? defaultRenderLabel : (context, node, x, y, width) => opts.renderLabel && opts.renderLabel(c, { context, node, x, y, width })
 
-  // Use custom tooltip rendering function if defined
   var renderTooltip = (opts.renderTooltip === undefined) ? defaultRenderTooltip : node => opts.renderTooltip && opts.renderTooltip(node)
 
-  // Use custom handler for clicks on canvas if defined; preserves default `this` as being the DOM object
+  var stackBoxGlobals = { STATE_HOVER, STATE_UNHOVER, STATE_IDLE, frameColors, colorHash } // Shouldn't include `c` i.e. frame height because its value can change e.g. chart.cellHeight(newC)
+  var renderStackFrameBox = (opts.renderStackFrameBox === undefined) ? defaultRenderStackFrameBox : (context, node, x, y, width, state) => opts.renderStackFrameBox && opts.renderStackFrameBox(stackBoxGlobals, { context, node, state }, { x, y, width, height: c })
+
   var clickHandler = (opts.clickHandler === undefined) ? defaultClickHandler : opts.clickHandler || function (target) { return target || nodes ? nodes[0] : null }
 
   onresize()
@@ -466,23 +466,12 @@ function flameGraph (opts) {
       x = interpolate(scaleToWidth(prev.x0), x, ease)
     }
 
-    // don't bother drawing anything fancy for tiny frames, just do a box.
-    if (width < 3) {
-      // Hidden by zoom
-      if (node.data.value === 0) return
-      context.fillStyle = heatBars || !node.parent
-        ? frameColors.fill
-        : colorHash(node.data, undefined, allSamples, tiers)
-      context.fillRect(x, y, Math.max(width, 1), c)
-      return
-    }
-
     if (state === STATE_HOVER || state === STATE_UNHOVER) {
       context.clearRect(x, y, width, c)
     }
 
     // Draw heat.
-    if (heatBars && node.parent != null &&
+    if (width >= 3 && heatBars && node.parent != null &&
         // These states mean we're redrawing on top of an existing rendered graph,
         // so we shouldn't exceed the current rectangle's boundaries; the heat will
         // still be visible from before
@@ -499,7 +488,19 @@ function flameGraph (opts) {
     }
   }
 
-  function renderStackFrameBox (context, node, x, y, width, state) {
+  function defaultRenderStackFrameBox (context, node, x, y, width, state) {
+    // don't bother drawing anything fancy for tiny frames, just do a box.
+    if (width < 3) {
+      // Hidden by zoom
+      if (node.data.value === 0) return
+
+      context.fillStyle = heatBars || !node.parent
+        ? frameColors.fill
+        : colorHash(node.data, undefined, allSamples, tiers)
+      context.fillRect(x, y, Math.max(width, 1), c)
+      return
+    }
+
     var fillColor = heatBars || !node.parent
       ? frameColors.fill
       : colorHash(node.data, undefined, allSamples, tiers)
