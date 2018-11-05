@@ -74,10 +74,7 @@ require('d3-flamegraph')({
   height,     // Number (pixels). If not set, is calculated based on tallest stack
   width,      // Number (pixels). If not set, is calculated based on clientWidth when called
   cellHeight, // Number (pixels). Defaults to 18 pixels. Font sizes scale along with this value.
-<<<<<<< HEAD
-=======
   collapseHiddenNodeWidths, // Boolean, see below
->>>>>>> source/master
   heatBars, // Boolean, when false (default), heat is visualized as the background colour of stack frames;
             // when true, heat is visualized by a bar drawn on _top_ of stack frames
   frameColors: { // Object, colors for the stack frame boxes.
