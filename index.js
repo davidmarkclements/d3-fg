@@ -745,7 +745,8 @@ function flameGraph (opts) {
               dispatch.call('contextmenu', null, null, null, null)
             }
           })
-          .on('dblclick.zoom', function () {
+          .on('dblclick.zoom', null)
+          .on('dblclick', function () {
             const pointerCoords = { x: d3.event.offsetX, y: d3.event.offsetY }
             const target = getNodeAt(this, pointerCoords.x, pointerCoords.y)
 
