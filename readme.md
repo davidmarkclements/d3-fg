@@ -74,6 +74,10 @@ require('d3-flamegraph')({
   height,     // Number (pixels). If not set, is calculated based on tallest stack
   width,      // Number (pixels). If not set, is calculated based on clientWidth when called
   cellHeight, // Number (pixels). Defaults to 18 pixels. Font sizes scale along with this value.
+<<<<<<< HEAD
+=======
+  collapseHiddenNodeWidths, // Boolean, see below
+>>>>>>> source/master
   heatBars, // Boolean, when false (default), heat is visualized as the background colour of stack frames;
             // when true, heat is visualized by a bar drawn on _top_ of stack frames
   frameColors: { // Object, colors for the stack frame boxes.
@@ -103,7 +107,7 @@ require('d3-flamegraph')({
     node             // Object, a d3-fg node representing the highlighted frame
     // no return value expected
   },
-  renderLabel: function (stackHeight, options) { // Writing on-frame Canvas labels
+  renderLabel: function (frameHeight, options) { // Writing on-frame Canvas labels
     const {
       context,       // Object, the Canvas DOM object being modified
       node,          // Object, a d3-fg node representing the frame being labelled
@@ -111,14 +115,36 @@ require('d3-flamegraph')({
       y,             // Number, the y co-ordinate of the top left corner of the frame
       width          // Number, the pixel width of the frame
     } = options
-    stackHeight      // Number, the default pixel height for all stacks in the flamegraph
+    frameHeight      // Number, the default pixel height for all frames in the flamegraph
   },
+  renderStackFrameBox: function (globals, locals, rect) {
+    const {
+      STATE_HOVER,   // Number, for comparison against `state` to see if this frame is hoverred
+      STATE_UNHOVER, // Number, as above but for frames that are no longer hoverred
+      STATE_IDLE,    // Number, as above but for frames in normal, resting state
+      frameColors,   // Object, expects color definition strings keyed `fill` and `stroke`
+      colorHash      // Function, see above. Either default, override, or return frameColors.fill.
+    } = globals
+    const {
+      context,       // Object, the Canvas DOM object being modified
+      node,          // Object, a d3-fg node representing the frame being labelled
+      state          // Number, see STATE_HOVER, STATE_UNHOVER and STATE_IDLE above
+    } = locals
+    rect             // Object, numeric { x, y, width, height } values for this frame's rectangle
+  }
   clickHandler: function (target) { // Responds to clicks on the canvas, before calling dispatch
     target           // Null or Object, a d3-fg node representing the frame clicked on
     this             // The DOM object (in this case, the Canvas)
     return           // Returns target or all-stacks frame
+  }
 })
 ```
+
+### `collapseHiddenNodeWidths`
+
+Boolean, affects the widths of stack frames excluded by type filters.
+
+When true, hidden frames do not take up space, but instead all their visible children are aligned closely next to each other, to the left of their closest visible parent. In practice, this means that there are no gaps between frames. When toggling filters, frames may jump horizontally.
 
 ## Dependencies
 
