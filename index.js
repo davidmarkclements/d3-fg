@@ -57,7 +57,7 @@ function flameGraph (opts) {
   var panZoom = d3.zoom().on('zoom', function () {
     update({ animate: false })
   })
-  var dispatch = d3.dispatch('zoom', 'hoverin', 'hoverout', 'animationEnd', 'click')
+  var dispatch = d3.dispatch('zoom', 'hoverin', 'hoverout', 'animationEnd', 'click', 'dblClick', 'contextmenu')
   var selection = null
   var transitionDuration = 500
   var transitionEase = d3.easeCubicInOut
@@ -731,7 +731,33 @@ function flameGraph (opts) {
           .attr('transition', 'transform 200ms ease-in-out')
           .call(panZoom)
           .on('wheel.zoom', null)
+          .on('contextmenu', function () {
+            const pointerCoords = { x: d3.event.offsetX, y: d3.event.offsetY }
+            const target = getNodeAt(this, pointerCoords.x, pointerCoords.y)
+
+            d3.event.preventDefault()
+
+            if (target) {
+              // Passes original datum and rect / event co-ordinates, same as hoverin / hoverout dispatches
+              dispatch.call('contextmenu', null, target.data, getNodeRect(target), pointerCoords)
+            } else {
+              // Click on the flamegraph background. Listeners can ignore it or treat it as deselection
+              dispatch.call('contextmenu', null, null, null, null)
+            }
+          })
           .on('dblclick.zoom', null)
+          .on('dblclick', function () {
+            const pointerCoords = { x: d3.event.offsetX, y: d3.event.offsetY }
+            const target = getNodeAt(this, pointerCoords.x, pointerCoords.y)
+
+            if (target) {
+              // Passes original datum and rect / event co-ordinates, same as hoverin / hoverout dispatches
+              dispatch.call('dblClick', null, target.data, getNodeRect(target), pointerCoords)
+            } else {
+              // Click on the flamegraph background. Listeners can ignore it or treat it as deselection
+              dispatch.call('dblClick', null, null, null, null)
+            }
+          })
           .on('click', function () {
             const pointerCoords = { x: d3.event.offsetX, y: d3.event.offsetY }
             const target = getNodeAt(this, pointerCoords.x, pointerCoords.y)

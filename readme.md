@@ -34,6 +34,8 @@ Using `d3.dispatch`, d3-fg defines events that can be listened for and responded
 
  - `hoverin` On hovering in to a rendered frame on the flamegraph. Same args as `click`
  - `hoverout` On hovering out of a rendered frame on the flamegraph. No args passed.
+ - `dblClick` On double clicking on a rendered frame on the flamegraph. Same args as `click`.
+ - `contextmenu` On right clicking on a rendered frame on the flamegraph. Same args as `click`.
  - `zoom` On d3-fg executing a zoom on a frame.
 
  ```js
