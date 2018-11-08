@@ -847,8 +847,11 @@ function flameGraph (opts) {
   }
 
   chart.cellHeight = function (_) {
-    if (!arguments.length) { return c }
+    if (!arguments.length) { return w }
     c = _
+    h = (maxDepth(tree) + 2) * c
+    onresize()
+    update()
     return chart
   }
 
