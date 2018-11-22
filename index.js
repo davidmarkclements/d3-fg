@@ -83,6 +83,8 @@ function flameGraph (opts) {
 
   var clickHandler = (opts.clickHandler === undefined) ? defaultClickHandler : opts.clickHandler || function (target) { return target || nodes ? nodes[0] : null }
 
+  var isNodeExcluded = (opts.isNodeExcluded === undefined) ? defaultIsNodeExcluded : opts.isNodeExcluded || function () { return false }
+
   onresize()
 
   function onresize () {
@@ -181,7 +183,7 @@ function flameGraph (opts) {
     if (data.children && (data.children.length > 0)) {
       data.children.forEach(filter)
       data.children.forEach(function (child) {
-        if (~filterTypes.indexOf(child.data.type)) {
+        if (isNodeExcluded(child, filterTypes)) {
           child.data.hide = true
         } else {
           child.data.hide = false
@@ -957,7 +959,10 @@ function flameGraph (opts) {
   return chart
 }
 
-// This function can be overridden by passing a function to opts.colorHash
+function defaultIsNodeExcluded (node, filterTypes) {
+  return ~filterTypes.indexOf(node.data.type)
+}
+
 function defaultColorHash (d, perc, allSamples, tiers) {
   if (!d.name) {
     return perc ? 'rgb(127, 127, 127)' : 'rgba(0, 0, 0, 0)'

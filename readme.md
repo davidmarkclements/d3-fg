@@ -53,7 +53,9 @@ Pass in options as an object, including optional overrides for the following bui
  - `colorHash` - Applying calculated colours using a built-in orange-to-red scale based on time spent at stack top
  - `renderTooltip` - Creating and updating a tooltip giving basic frame information
  - `renderLabel` - Writing frame information on the frames themselves in Canvas
+ - `renderStackFrameBox` - Drawing the frame rectangles in Canvas, including redrawing on hover
  - `clickHandler` - Zooming in on nodes when clicked on, or zooming out when clicking outside any node
+ - `isNodeExcluded` - Checking if a frame should be hidden based on its node data and the current exclusion filters
 
 ```js
 require('d3-flamegraph')({
@@ -66,6 +68,7 @@ require('d3-flamegraph')({
   element,    // Existing DOM reference. Do not pass a d3 selection, use d3.select(...).node()
 
   // Optional:
+  exclude,    // Iterable or Array, containing type strings used to filter and hide frames
   timing,     // Boolean, if passed as true logs times to console
   categorizer: function (data, index, children) { // Function that determines the category for a given
                                                   // stack frame. e.g. "app", "core"
@@ -130,11 +133,15 @@ require('d3-flamegraph')({
       state          // Number, see STATE_HOVER, STATE_UNHOVER and STATE_IDLE above
     } = locals
     rect             // Object, numeric { x, y, width, height } values for this frame's rectangle
-  }
+  },
   clickHandler: function (target) { // Responds to clicks on the canvas, before calling dispatch
     target           // Null or Object, a d3-fg node representing the frame clicked on
     this             // The DOM object (in this case, the Canvas)
     return           // Returns target or all-stacks frame
+  },
+  isNodeExcluded: function (node, filterTypes) { // Used in filtering to set nodes' .hide property
+    node             // Object, a d3-fg node representing the frame being filtered
+    filterTypes      // Array, based on `exclude` if it is passed as an option
   }
 })
 ```
