@@ -834,7 +834,7 @@ function flameGraph (opts) {
 
   chart.height = function (_) {
     if (!arguments.length) { return h }
-    h = _
+    h = _ < minHeight ? minHeight : _
     onresize()
     update()
     return chart
