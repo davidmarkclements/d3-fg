@@ -840,6 +840,15 @@ function flameGraph (opts) {
     return chart
   }
 
+  chart.minHeight = function (_) {
+    if (!arguments.length) { return minHeight }
+    minHeight = _
+    h = h < minHeight ? minHeight : h
+    onresize()
+    update()
+    return chart
+  }
+
   chart.width = function (_) {
     if (!arguments.length) { return w }
     w = _
