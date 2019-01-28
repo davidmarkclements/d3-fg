@@ -346,7 +346,7 @@ function flameGraph (opts) {
 
     var mayAnimate = opts && opts.animate
 
-    adjustForHighDpiScreen(selection.select('canvas'))
+    adjustForHighDpiScreen(selection.select('canvas.d3-flame-graph'))
 
     selection
       .each(function (data) {
@@ -381,7 +381,7 @@ function flameGraph (opts) {
 
         nodes = data.descendants()
 
-        var canvas = d3.select(this).select('canvas').node()
+        var canvas = d3.select(this).select('canvas.d3-flame-graph').node()
 
         // Animate if data was known for this set of nodes in the past.
         if (nodes[0].data.prev && mayAnimate) {
@@ -597,7 +597,7 @@ function flameGraph (opts) {
     if (!node) return null
 
     var wrapper = d3.select(element)
-    var canvas = wrapper.select('canvas').node()
+    var canvas = wrapper.select('canvas.d3-flame-graph').node()
     var transform = d3.zoomTransform(canvas)
     const x0 = transform.applyX(scaleToWidth(node.x0))
     const x1 = transform.applyX(scaleToWidth(node.x1))
@@ -612,7 +612,7 @@ function flameGraph (opts) {
 
   function defaultRenderTooltip (node) {
     var wrapper = d3.select(element)
-    var canvas = wrapper.select('canvas').node()
+    var canvas = wrapper.select('canvas.d3-flame-graph').node()
     var transform = d3.zoomTransform(canvas)
     var x = transform.applyX(scaleToWidth(node.x0)) + canvas.getBoundingClientRect().left
     // y = the bottom of the node - the scroll from the top
@@ -821,7 +821,7 @@ function flameGraph (opts) {
             .on('mouseout', hideTooltip)
         }
 
-        adjustForHighDpiScreen(node.select('canvas'))
+        adjustForHighDpiScreen(node.select('canvas.d3-flame-graph'))
       }
 
       categorizeTree(data)
@@ -922,7 +922,7 @@ function flameGraph (opts) {
   }
 
   chart.setGraphZoom = function (n) {
-    panZoom.scaleTo(d3.select(element).select('canvas'), n)
+    panZoom.scaleTo(d3.select(element).select('canvas.d3-flame-graph'), n)
   }
 
   chart.renderTree = function (data) {
