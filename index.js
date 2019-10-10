@@ -24,6 +24,7 @@ var colors = {
   cpp: { h: 0, s: 50, l: 50 },
   native: { h: 122, s: 50, l: 45 },
   core: { h: 0, s: 0, l: 80 },
+  wasm: { h: 150, s: 80, l: 80 },
   deps: { h: 244, s: 50, l: 65 },
   app: { h: 200, s: 50, l: 45 },
   init: { h: 21, s: 81, l: 73 }
@@ -289,7 +290,17 @@ function flameGraph (opts) {
     if (d.data.hide) { return }
 
     var searchArea
-    if (d.data.type === 'cpp') { searchArea = label.split('[')[0] } else if (d.data.type === 'v8') { searchArea = label.split(' ')[0] } else if (d.data.type === 'regexp') { searchArea = label } else { searchArea = label.split(':')[0] }
+    if (d.data.type === 'cpp') {
+      searchArea = label.split('[')[0]
+    } else if (d.data.type === 'v8') {
+      searchArea = label.split(' ')[0]
+    } else if (d.data.type === 'regexp') {
+      searchArea = label
+    } else if (d.data.type === 'wasm') {
+      searchArea = label.slice(0, label.lastIndexOf('[WASM'))
+    } else {
+      searchArea = label.split(':')[0]
+    }
     if (re.test(searchArea)) {
       d.data.highlight = color || true
     } else {
