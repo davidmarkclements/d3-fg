@@ -971,6 +971,10 @@ function flameGraph (opts) {
     return getNodeRect(node)
   }
 
+  chart.select = function (node, color) {
+    node.highlight = true
+  }
+
   chart.on = dispatch.on.bind(dispatch)
 
   exclude.forEach(chart.typeHide)
