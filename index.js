@@ -972,7 +972,13 @@ function flameGraph (opts) {
   }
 
   chart.select = function (node, color) {
-    node.highlight = true
+    node.highlight = color || true
+    update()
+  }
+
+  chart.deselect = function (node) {
+    node.highlight = false
+    update()
   }
 
   chart.on = dispatch.on.bind(dispatch)
